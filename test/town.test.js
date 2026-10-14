@@ -107,3 +107,20 @@ test('every prop is one that can be drawn, and draws', () => {
   }
   assert.ok(g.matte.attributes.position.count > 10000);
 });
+
+test('nothing solid stands in the road', () => {
+  const road = (x, z) => ['road', 'highway'].includes(town.cell(Math.floor(x), Math.floor(z))?.surface);
+  for (const m of town.models) {
+    if (['sedan', 'hatchback', 'pickup', 'junker'].includes(m.name)) continue;
+    assert.ok(!road(m.x, m.z), `${m.name} at ${m.x},${m.z}`);
+  }
+  for (const c of town.cylinders) assert.ok(!road(c.x, c.z) || c.y0 > 2, `post at ${c.x},${c.z}`);
+  // Solids over the road only up out of the traffic's way (a footbridge's railings), or the tunnel mouths and the barrier at the ends.
+  for (const s of town.solids) {
+    const cx = (s.min[0] + s.max[0]) / 2, cz = (s.min[2] + s.max[2]) / 2;
+    // (A wall along the road's edge, on the line between the tiles, isn't in it.)
+    const inside = [[s.min[0] + 0.01, s.min[2] + 0.01], [s.max[0] - 0.01, s.max[2] - 0.01]].every(([x, z]) => road(x, z));
+    if (!inside || s.min[1] >= 2) continue;
+    assert.ok(s.min[2] > 3.5 && s.min[2] < 4 || s.max[2] > town.rows - 4 && s.max[2] < town.rows - 3.5, `solid at ${cx},${cz}`);
+  }
+});
