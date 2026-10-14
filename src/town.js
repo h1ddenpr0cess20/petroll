@@ -188,9 +188,12 @@ function streets(c) {
   }
   // Street lamps on the corners, trees along the avenue.
   // Street lamps on the corners, their arms out over the junction; more along the long blocks.
-  for (const x of DOWN) for (const z of ACROSS) c.place('streetlamp', x - 0.5, z - 0.5, { angle: -Math.PI / 4 });
-  for (const x of DOWN) for (const z of [18.5, 41.5]) c.place('streetlamp', x - 0.5, z, { angle: 0 });
-  for (const z of ACROSS) for (const x of [17.5, 37.5, 57.5, 77.5]) c.place('streetlamp', x, z - 0.5, { angle: -Math.PI / 2 });
+  // At the kerb's edge, so the pavement past them is wide enough for the ball.
+  const kerb = 0.2;
+  for (const x of DOWN) for (const z of ACROSS) c.place('streetlamp', x - kerb, z - kerb, { angle: -Math.PI / 4 });
+  // (Not along the car park, where the pavement runs between its wall and the kerb.)
+  for (const x of DOWN) for (const z of [18.5, 41.5]) if (!(x === 86 && z === 18.5)) c.place('streetlamp', x - kerb, z, { angle: 0 });
+  for (const z of ACROSS) for (const x of [17.5, 37.5, 57.5, 77.5]) c.place('streetlamp', x, z - kerb, { angle: -Math.PI / 2 });
   for (let x = 8; x < 92; x += 6) if (!inStreet(x, [26, 46])) c.place(x % 4 ? 'tree' : 'pine', x + 0.5, 57.5, { scale: 0.9 + (x % 3) * 0.1, angle: x });
   for (let z = 12; z < 50; z += 7) c.place('pine', 3.5, z + 0.5, { scale: 1.1, angle: z });
 }
@@ -225,7 +228,7 @@ function mapleGrove(c) {
   c.place('mailbox', 15.6, 10.6, { turn: 2 });
   c.place('tree', 24, 18.5, { scale: 1.1 });
   c.place('tree', 11.5, 18.5, { scale: 0.95, angle: 1 });
-  c.place('hydrant', 9.6, 26.4);
+  c.place('hydrant', 10.25, 26.4);
   c.goldenSeed('Home sweet home', 23.5, 25.5);
   c.seedLine(17.5, 13, 17.5, 25, 7);
 
@@ -284,10 +287,8 @@ function downtown(c) {
   c.block(51, 11, 7, 9, CURB + 7.2, { wall: '#a8b4c4', facade: 'office', base: CURB, lit: 0.35 });
   c.block(51, 21, 7, 6, CURB + 6, { wall: '#c87a5a', facade: 'brick', base: CURB, lit: 0.45, door: 's' });
   c.block(59, 11, 6, 16, CURB + 9.9, { wall: '#8a98aa', facade: 'office', base: CURB, lit: 0.3 });
-  for (const [x, col] of [[53, '#3a7a3a'], [61.5, '#3d6ea0']]) {
-    c.place('dumpster', x, 27.5, { turn: 2 });
-    void col;
-  }
+  // A dumpster round the side of the car park, out of everybody's way.
+  c.place('dumpster', 71.55, 25, { turn: 1 });
   c.goldenSeed('Down the back alley', 58.5, 25.5);
   c.seedLine(58.5, 14, 58.5, 24, 5);
 
@@ -381,9 +382,12 @@ function gasStation(c) {
   // The footbridge over the interstate, to the billboard on the hill.
   c.slope(101, 34, 10, 2, 0, 2.7, 'x', { surface: 'concrete' });
   c.deck(111, 34, 11.2, 2, 2.7, { colour: '#a7a39a' });
-  wall(c, 101, 33.8, 122, 34, 0, 3.3, '#5a6068', 'shiny');
-  wall(c, 101, 36, 115.8, 36.2, 0, 3.3, '#5a6068', 'shiny');
-  wall(c, 117.4, 36, 122, 36.2, 0, 3.3, '#5a6068', 'shiny');
+  // Its sides: walls beside the ramp, railings along the deck (the traffic goes under).
+  wall(c, 101, 33.8, 111, 34, 0, 3.3, '#5a6068', 'shiny');
+  wall(c, 101, 36, 111, 36.2, 0, 3.3, '#5a6068', 'shiny');
+  wall(c, 111, 33.8, 122, 34, 2.7, 3.3, '#5a6068', 'shiny');
+  wall(c, 111, 36, 115.8, 36.2, 2.7, 3.3, '#5a6068', 'shiny');
+  wall(c, 117.4, 36, 122, 36.2, 2.7, 3.3, '#5a6068', 'shiny');
   c.flat(122, 24, 3, 22, 2.7, { surface: 'grass', wall: '#6a4a2c' });
   c.prop('billboard', 123.6, 31, { text: 'PETROLL' });
   c.solid(123.2, 2.7, 28.6, 124.0, 6.5, 33.4);

@@ -24,39 +24,42 @@ export const TINTS = Object.freeze({ blue: '#5aa8f0', clear: '#e8f2fa', pink: '#
 const FUR = pelt({ over: '#cf8440', under: '#f4e6cc', vary: 0.1, freq: 18, grain: 0.06, gfreq: 120, strands: 0.18, sfreq: 220, flow: 2, edge: [-0.15, 0.45] });
 const PINK = '#eba0a0';
 
-/** Where the legs hang from on the body (as sculpted): shoulders and hips, left and right. */
+/** Where the legs hang from on the body (as sculpted): shoulders and hips, left and right, tucked up inside the fur. A bound: the front paws a little apart, the hind feet together half a stride later. */
 const LEGS = [
-  { at: [-0.055, 0.1, 0.12], def: 'front', phase: 0 },
-  { at: [0.055, 0.1, 0.12], def: 'front', phase: Math.PI },
-  { at: [-0.075, 0.1, -0.08], def: 'hind', phase: Math.PI },
-  { at: [0.075, 0.1, -0.08], def: 'hind', phase: 0 },
+  { at: [-0.052, 0.06, 0.11], def: 'front', phase: 0 },
+  { at: [0.052, 0.06, 0.11], def: 'front', phase: 0.5 },
+  { at: [-0.07, 0.06, -0.085], def: 'hind', phase: Math.PI },
+  { at: [0.07, 0.06, -0.085], def: 'hind', phase: Math.PI + 0.35 },
 ];
 
-/** How far the body stands up off the floor on its legs (as sculpted). */
-const STAND = 0.04;
+/** How far the body stands up off the floor on its legs (as sculpted): hardly at all — a hamster's legs are under its fur. */
+const STAND = 0.012;
 
-/** A front leg, hanging from its shoulder at the origin: a furry forearm, a little pink hand with its fingers. */
+/** The quickest the legs go round, radians a second (about five steps a second). */
+const MAX_STEP = 32;
+
+/** A front leg, from its shoulder at the origin: a short furry arm, a little pink hand with its fingers. */
 const FRONT_LEG = {
   name: 'hamster-front-leg',
   cell: 0.004,
   materials: { fur: { roughness: 0.82, sheen: 1, sheenColor: '#ffe2bc', sheenRoughness: 0.5 }, skin: { roughness: 0.55 } },
   sculpt(s) {
-    s.limb([0, 0.0, 0], [0, -0.07, 0.01], 0.024, 0.016, { color: '#f2e2c6', mat: 'fur', k: 0.01 });
-    s.ellipsoid([0, -0.088, 0.02], [0.017, 0.01, 0.022], { color: PINK, mat: 'skin', k: 0.01 });
-    for (const dx of [-0.009, 0, 0.009]) s.limb([dx, -0.092, 0.03], [dx * 1.2, -0.094, 0.044], 0.0045, 0.003, { color: PINK, mat: 'skin', k: 0.003 });
+    s.limb([0, 0.0, 0], [0, -0.044, 0.006], 0.021, 0.013, { color: '#efd9b8', mat: 'fur', k: 0.01 });
+    s.ellipsoid([0, -0.051, 0.014], [0.015, 0.007, 0.019], { color: PINK, mat: 'skin', k: 0.008 });
+    for (const dx of [-0.008, 0, 0.008]) s.limb([dx, -0.053, 0.022], [dx * 1.2, -0.055, 0.034], 0.004, 0.0028, { color: PINK, mat: 'skin', k: 0.003 });
   },
 };
 
-/** A hind leg, from its hip at the origin: a fat haunch, a long pink foot flat to the ground. */
+/** A hind leg, from its hip at the origin: the haunch (mostly in the body), a short shank, a long pink foot flat to the ground. */
 const HIND_LEG = {
   name: 'hamster-hind-leg',
   cell: 0.0045,
   materials: FRONT_LEG.materials,
   sculpt(s) {
-    s.ellipsoid([0, -0.025, 0], [0.032, 0.04, 0.038], { color: FUR, mat: 'fur', k: 0.012 });
-    s.limb([0, -0.04, -0.008], [0, -0.084, 0.0], 0.02, 0.014, { color: '#f2e2c6', mat: 'fur', k: 0.01 });
-    s.ellipsoid([0, -0.092, 0.018], [0.019, 0.009, 0.038], { color: PINK, mat: 'skin', k: 0.01 });
-    for (const dx of [-0.01, 0, 0.01]) s.limb([dx, -0.095, 0.045], [dx * 1.2, -0.096, 0.058], 0.0045, 0.003, { color: PINK, mat: 'skin', k: 0.003 });
+    s.ellipsoid([0, -0.006, 0], [0.03, 0.034, 0.036], { color: FUR, mat: 'fur', k: 0.012 });
+    s.limb([0, -0.022, -0.006], [0, -0.045, 0.0], 0.017, 0.012, { color: '#efd9b8', mat: 'fur', k: 0.01 });
+    s.ellipsoid([0, -0.052, 0.016], [0.016, 0.007, 0.03], { color: PINK, mat: 'skin', k: 0.008 });
+    for (const dx of [-0.009, 0, 0.009]) s.limb([dx, -0.054, 0.036], [dx * 1.2, -0.055, 0.047], 0.004, 0.0028, { color: PINK, mat: 'skin', k: 0.003 });
   },
 };
 
@@ -214,14 +217,14 @@ export function createHamster(GFX, { radius = RADIUS } = {}) {
         hamster.rotation.y += d * Math.min(1, dt * 10);
       }
       const going = Math.min(1, speed / 1.2);
-      // A stride as long as the ball rolls under it.
-      stride += (speed / 0.14) * dt;
+      // Steps as quick as the ball rolls under it, up to a scurry the eye can still follow.
+      stride += Math.min(speed / 0.05, MAX_STEP) * dt;
       for (const l of legs) {
         const a = stride + l.phase;
-        const swing = Math.sin(a) * 0.8 * going;
-        const lift = Math.max(0, Math.cos(a)) * 0.018 * going;
-        l.hinge.rotation.x = -swing;
-        l.hinge.position.y = l.at[1] + lift;
+        // Each paw goes round: forward lifted, back flat on the plastic.
+        l.hinge.position.z = l.at[2] + Math.sin(a) * 0.024 * going;
+        l.hinge.position.y = l.at[1] + Math.max(0, Math.cos(a)) * 0.014 * going;
+        l.hinge.rotation.x = -Math.sin(a) * 0.3 * going;
       }
       bob.position.y = floor + Math.abs(Math.sin(stride)) * 0.01 * going;
       bob.rotation.x = 0.1 * going + Math.sin(stride * 2) * 0.025 * going;

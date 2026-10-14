@@ -25,6 +25,9 @@ const PAINT = ['#c8382c', '#2c6ec8', '#e8e2d6', '#f2c230', '#3a8a4a', '#1c1b1f',
 /** How hard cars speed up and slow down, tiles a second a second. */
 const ACCEL = 3.5, BRAKE = 12;
 
+/** Within this of where the camera looks, a car is drawn in full; further, its lighter version (the difference doesn't show at that size). */
+const NEAR = 9;
+
 /** A path round `points` with its corners rounded to radius `round`: points, and the distance to each. */
 export function roundedPath(points, { open = false, round = 1.6, steps = 6 } = {}) {
   const out = [];
@@ -85,6 +88,7 @@ export function createTraffic(GFX, map, world) {
       const paint = PAINT[(ri * 3 + i * 7) % PAINT.length];
       const which = KINDS[kind].models[(ri + i) % KINDS[kind].models.length];
       const { geometry, def } = model(GFX, which);
+      const far = model(GFX, `${which}-far`).geometry;
       const key = `${which}${paint}`;
       if (!looks.has(key)) looks.set(key, materialsOf(GFX, def, { paint: { color: paint } }));
       const mesh = new GFX.Mesh(geometry, looks.get(key));
@@ -94,7 +98,7 @@ export function createTraffic(GFX, map, world) {
       const size = which === 'pickup' ? { ...KINDS.car, length: 2.1 } : which === 'hatchback' ? { ...KINDS.car, length: 1.7 } : KINDS[kind];
       const box = { solid: true, kind: 'car', vx: 0, vy: 0, vz: 0, min: [0, 0, 0], max: [0, 0, 0] };
       cars.push({
-        id: id++, road, path, kind, size, mesh, box,
+        id: id++, road, path, kind, size, mesh, box, near: geometry, far,
         s: (path.length * i) / road.cars, v: road.speed,
         x: 0, y: 0, z: 0, dx: 0, dz: 1, honked: 0,
       });
@@ -163,9 +167,10 @@ export function createTraffic(GFX, map, world) {
       return honks;
     },
 
-    /** Meshes to match, once a frame. */
-    sync() {
+    /** Meshes to match, once a frame; the cars more than `NEAR` from `eye` (where the camera looks) in their lighter versions. */
+    sync(eye = null) {
       for (const c of cars) {
+        c.mesh.geometry = eye && Math.hypot(c.x - eye.x, c.z - eye.z) > NEAR ? c.far : c.near;
         c.mesh.position.set(c.x, c.y, c.z);
         c.mesh.rotation.y = Math.atan2(c.dx, c.dz);
       }

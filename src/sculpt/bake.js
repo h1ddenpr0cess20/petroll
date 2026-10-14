@@ -8,7 +8,8 @@ import { build, Sculpt } from './sdf.js';
  *
  * A definition: `name`, `sculpt(s)`, `materials` ({ name: physical material
  * options }; the vertex colours give the colour), `cell` (the grid step,
- * in tiles) and `cells` ({ part: step } for finer parts).
+ * in tiles), `cells` ({ part: step } for finer parts) and `coarse` (a
+ * factor on all of them).
  */
 
 export function bakeData(def) {
@@ -18,8 +19,10 @@ export function bakeData(def) {
   const buckets = names.map(() => []);
   const chunks = [];
   let base = 0;
+  // `coarse` scales every grid step: the models seen from the game's height don't need the detail of a close-up.
+  const k = def.coarse ?? 1;
   for (const [part, shapes] of s.split()) {
-    const m = build(shapes, { cell: def.cells?.[part] ?? def.cell ?? 0.02, bones: ['root'], ambient: def.ambient ?? 0.3 });
+    const m = build(shapes, { cell: (def.cells?.[part] ?? def.cell ?? 0.02) * k, bones: ['root'], ambient: def.ambient ?? 0.3 });
     chunks.push(m);
     for (let t = 0; t < m.index.length; t += 3) {
       const a = m.mats[m.index[t]], b = m.mats[m.index[t + 1]], c = m.mats[m.index[t + 2]];

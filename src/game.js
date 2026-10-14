@@ -284,7 +284,7 @@ export function createGame({ stage, hud, input, audio, storage }) {
 
     world.userData.uncover(b, dt);
     xray.update(dt, b, stage.camera.position, run.map, player.visible);
-    run.traffic.sync();
+    run.traffic.sync(stage.target);
     run.hazards.sync(dt, run.time);
     pickups.sync(dt, run.time);
     effects.update(dt);

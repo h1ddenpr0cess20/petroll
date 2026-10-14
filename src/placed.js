@@ -8,6 +8,7 @@ import { model } from './models/library.js';
  * lamps round about, the way it is into the ground under it.
  */
 const CHUNK = 16;
+const NO_SHADOW = new Set(['seed', 'shrub', 'rock', 'cone', 'tyres', 'hydrant']);
 
 export function createPlaced(GFX, map, light) {
   const group = new GFX.Group();
@@ -78,7 +79,8 @@ export function mergeCopies(GFX, name, copies, light) {
   geometry.computeBoundingSphere();
   const mesh = new GFX.Mesh(geometry, materials);
   mesh.name = `placed-${name}`;
-  mesh.castShadow = true;
+  // Little things low to the ground don't throw shadows worth drawing twice.
+  mesh.castShadow = !NO_SHADOW.has(name);
   mesh.receiveShadow = true;
   return mesh;
 }

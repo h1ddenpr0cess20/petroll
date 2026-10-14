@@ -109,6 +109,12 @@ export function stepRun(run, push, dt = STEP, { live = true, moving = true } = {
   out.surface = cell?.surface ?? null;
   const grip = cell ? kind.grip : 1;
   const result = stepBall(ball, run.world, push[0] * grip, push[1] * grip, dt, { drag: cell ? kind.drag : 0.5 });
+  // Never under the ground: if something shoved it there (a car into a kerb or a bank), up onto it again.
+  const ground = run.map.heightAt(ball.x, ball.z);
+  if (ground != null && ball.y < ground - 0.02) {
+    ball.y = ground + ball.r;
+    ball.vy = Math.max(0, ball.vy);
+  }
   out.impact = result.impact;
   if (!live) return out;
 
