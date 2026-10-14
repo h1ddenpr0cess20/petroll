@@ -272,3 +272,26 @@ kbd {
   .right { gap: 12px; }
   .help .keys { display: none; }
 }
+
+#loading {
+  position: fixed;
+  left: 50%;
+  bottom: 18%;
+  transform: translateX(-50%);
+  width: min(320px, 70vw);
+  text-align: center;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--cream);
+}
+#loading[hidden] { display: none; }
+#loading::after {
+  content: '';
+  display: block;
+  margin-top: 10px;
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--gold) var(--done, 0%), rgba(255, 255, 255, 0.15) var(--done, 0%));
+}

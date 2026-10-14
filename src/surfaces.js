@@ -1,34 +1,38 @@
 /**
- * What the ground is made of, tile by tile: how it looks (`top`, and `wall`
- * for the sides where it stands above its neighbour) and how it rolls.
+ * What the ground is made of, tile by tile: how it looks — `tex`, the floor
+ * texture painted for it (`paint.js`), tinted `top`; `wtex` and `wall` for
+ * the sides where it stands above its neighbour — and how it rolls.
  *
  * - `drag`: rolling resistance, per second. Grass and dirt hold the bubble
  *   back; an oil slick hardly does.
  * - `grip`: how much of the push the hamster gets on it. On oil it is
  *   running in place.
  * - `sinks`: tar. Roll in and the bubble goes under.
+ * - `shine`: how it reflects (`wet`, `oil`, `tar`), if it does.
+ * - `map`: its colour on the map in the corner.
  */
 export const SURFACES = Object.freeze({
-  grass: { top: '#6f9e4c', wall: '#6a4a2c', drag: 1.1, grip: 1, map: '#5f8a3e' },
-  lawn: { top: '#7cb257', wall: '#6a4a2c', drag: 1.0, grip: 1, map: '#6da24a' },
-  road: { top: '#44464c', wall: '#55575c', drag: 0.5, grip: 1, map: '#3a3c42' },
-  highway: { top: '#3d3f45', wall: '#55575c', drag: 0.45, grip: 1, map: '#33353a' },
-  sidewalk: { top: '#bdb8ab', wall: '#9a958a', drag: 0.55, grip: 1, map: '#a9a497' },
-  concrete: { top: '#aaa69c', wall: '#8b877e', drag: 0.55, grip: 1, map: '#9c988e' },
-  forecourt: { top: '#b4b0a6', wall: '#8b877e', drag: 0.55, grip: 1, map: '#c2bdb0' },
-  brick: { top: '#a8644c', wall: '#7c4434', drag: 0.6, grip: 1, map: '#9a5a44' },
-  dirt: { top: '#9c7a52', wall: '#6a4a2c', drag: 0.9, grip: 0.95, map: '#9c7a52' },
-  sand: { top: '#d6b878', wall: '#a88a50', drag: 1.4, grip: 0.9, map: '#c9a96a' },
-  gravel: { top: '#9b948a', wall: '#6e675e', drag: 1.0, grip: 0.95, map: '#8a8378' },
-  metal: { top: '#8c939b', wall: '#5a6068', drag: 0.45, grip: 1, map: '#7a8189' },
-  roof: { top: '#7a4a3a', wall: '#e6dccb', drag: 0.6, grip: 1, map: '#6a4034' },
-  flatroof: { top: '#8a8a8e', wall: '#9aa0aa', drag: 0.55, grip: 1, map: '#7c7c80' },
-  oil: { top: '#16161b', wall: '#2a2a30', drag: 0.05, grip: 0.22, map: '#101014' },
-  wet: { top: '#56646e', wall: '#55575c', drag: 0.2, grip: 0.55, map: '#4a5862' },
-  tar: { top: '#0a0a0c', wall: '#1a1a1e', drag: 6, grip: 0.1, sinks: true, map: '#060608' },
-  pool: { top: '#8ccbe2', wall: '#dff0f5', drag: 0.45, grip: 1, map: '#7cc0dc' },
-  plank: { top: '#9a7448', wall: '#6a4a2c', drag: 0.6, grip: 1, map: '#8a6440' },
-  berm: { top: '#8c9a5a', wall: '#6a4a2c', drag: 1.2, grip: 1, map: '#7c8a4c' },
+  grass: { tex: 'grass', top: '#5a8438', wtex: 'cliff', wall: '#6a5038', drag: 1.1, grip: 1, map: '#4f7a34' },
+  lawn: { tex: 'lawn', top: '#6a9a44', wtex: 'cliff', wall: '#6a5038', drag: 1.0, grip: 1, map: '#5e8e3e' },
+  berm: { tex: 'grass', top: '#5e7238', wtex: 'cliff', wall: '#6a5038', drag: 1.2, grip: 1, map: '#566c34' },
+  road: { tex: 'asphalt', top: '#5a5c62', wtex: 'block', wall: '#8a8a8e', drag: 0.5, grip: 1, map: '#36383e' },
+  highway: { tex: 'asphalt', top: '#4e5056', wtex: 'block', wall: '#8a8a8e', drag: 0.45, grip: 1, map: '#2e3036' },
+  sidewalk: { tex: 'slabs', top: '#c4bcac', wtex: 'kerb', wall: '#b0a898', drag: 0.55, grip: 1, map: '#a49e90' },
+  concrete: { tex: 'concrete', top: '#b0aa9e', wtex: 'block', wall: '#9a958a', drag: 0.55, grip: 1, map: '#948f84' },
+  forecourt: { tex: 'concrete', top: '#d0cabc', wtex: 'block', wall: '#a8a296', drag: 0.55, grip: 1, map: '#bab4a6' },
+  brick: { tex: 'cobble', top: '#b08068', wtex: 'stone', wall: '#9a7a66', drag: 0.6, grip: 1, map: '#8e5e48' },
+  dirt: { tex: 'dirt', top: '#9a7650', wtex: 'cliff', wall: '#7a5838', drag: 0.9, grip: 0.95, map: '#8a6a46' },
+  sand: { tex: 'sand', top: '#d0b47a', wtex: 'cliff', wall: '#a88a50', drag: 1.4, grip: 0.9, map: '#c4a66a' },
+  gravel: { tex: 'scree', top: '#a09a8e', wtex: 'stone', wall: '#7a746a', drag: 1.0, grip: 0.95, map: '#848076' },
+  metal: { tex: 'plate', top: '#a8aeb6', wtex: 'hull', wall: '#7a8088', drag: 0.45, grip: 1, map: '#7a8189' },
+  grate: { tex: 'grate', top: '#9aa0a8', wtex: 'hull', wall: '#6a7078', drag: 0.45, grip: 1, map: '#6a7078' },
+  roof: { tex: 'shingles', top: '#9a6a56', wtex: 'clapboard', wall: '#e6dccb', drag: 0.6, grip: 1, map: '#5e3e34' },
+  flatroof: { tex: 'tarpaper', top: '#7a7a80', wtex: 'brick', wall: '#9aa0aa', drag: 0.55, grip: 1, map: '#6a6a70' },
+  oil: { tex: 'asphalt', top: '#18181e', wtex: 'block', wall: '#2a2a30', drag: 0.05, grip: 0.22, shine: 'oil', map: '#101014' },
+  wet: { tex: 'concrete', top: '#6a7a86', wtex: 'block', wall: '#55575c', drag: 0.2, grip: 0.55, shine: 'wet', map: '#4a5862' },
+  tar: { tex: 'asphalt', top: '#0e0e10', wtex: 'cliff', wall: '#1a1a1e', drag: 6, grip: 0.1, sinks: true, shine: 'tar', map: '#060608' },
+  pool: { tex: 'pooltile', top: '#8ccbe2', wtex: 'pooltile', wall: '#cfe8f0', drag: 0.45, grip: 1, map: '#7cc0dc' },
+  plank: { tex: 'planks', top: '#9a7448', wtex: 'timber', wall: '#6a4a2c', drag: 0.6, grip: 1, map: '#8a6440' },
 });
 
 export const surfaceOf = (cell) => SURFACES[cell?.surface] ?? SURFACES.road;

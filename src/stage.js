@@ -5,10 +5,10 @@
  * isometric corner and can be turned, tilted and zoomed round wherever the
  * hamster is (`view.js`).
  *
- * It is always early evening in Petroleum Springs: a low sun that casts the
- * shadows (following the play), a sky wash, a cool fill. The sky is painted
- * at startup, and what the plastic, the paint and the puddles reflect is
- * the same sky.
+ * It is night in Petroleum Springs, as it is in Rock 'n' Roller's venues:
+ * a dim wash, the moon high up for the shadows, a lantern over the hamster,
+ * and the real light of the lamps nearest it (`LAMP_LIGHTS` of them, a
+ * fixed number); every other lamp is baked into the ground (`map.js`).
  */
 
 import * as GFX from './vendor/gfx/index.js';
@@ -35,17 +35,20 @@ async function createRenderer(preference) {
   return new Renderer(new WebGLBackend(canvas), canvas);
 }
 
-/** Where the sun is: low in the west-south-west, behind the camera's left shoulder at the start, for long evening shadows. */
-export const SUN = Object.freeze(new GFX.Vector3(-0.15, 0.42, 0.9).normalize());
+/** Where the moon is: high, behind the camera's left shoulder at the start, for the shadows. */
+export const MOON = Object.freeze(new GFX.Vector3(-0.35, 1, 0.55).normalize());
 
-const SKY = [[0, '#22305a'], [0.25, '#3c4a7a'], [0.4, '#7a6a8c'], [0.47, '#d88a72'], [0.5, '#f2b07a'], [0.515, '#d8a088'], [0.6, '#b48a7a'], [1, '#6a5a52']];
+/** How many of the town's lamps get a real light at once (the nearest the hamster). The count is fixed, so no shader ever changes. */
+export const LAMP_LIGHTS = 6;
+
+const SKY = [[0, '#03040c'], [0.3, '#070a1c'], [0.44, '#121a36'], [0.5, '#2a2a44'], [0.53, '#1a1626'], [1, '#050407']];
 
 /**
- * The sky at golden hour, as an equirectangular canvas: deep blue overhead
- * going to violet and then to peach at the horizon, the sun's glow, a
- * ridge of far hills with derricks and a town on it. `u(dx, dz)` says
- * where round the canvas a direction is, which differs between the sky
- * dome and the reflections.
+ * The night over Petroleum Springs, as an equirectangular canvas: stars, a
+ * moon, a sky going to a dirty orange at the horizon where the refineries
+ * light it from below, and on the horizon the silhouettes of cracking
+ * towers and flare stacks burning, derricks with red lights on top, and
+ * the lights of the next town.
  */
 function paintSky(u, { width = 2048, ridge = true } = {}) {
   const height = width / 2;
@@ -58,59 +61,119 @@ function paintSky(u, { width = 2048, ridge = true } = {}) {
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, width, height);
   const horizon = height / 2;
-  // The sun, low, and its glow along the horizon.
-  const sx = u(SUN.x, SUN.z) * width, sy = horizon - (Math.asin(SUN.y) / Math.PI) * height;
-  for (const ox of [-width, 0, width]) {
-    const glow = ctx.createRadialGradient(sx + ox, sy, 0, sx + ox, sy, height * 0.5);
-    glow.addColorStop(0, 'rgba(255,236,190,0.95)');
-    glow.addColorStop(0.08, 'rgba(255,200,140,0.6)');
-    glow.addColorStop(0.35, 'rgba(255,150,100,0.18)');
-    glow.addColorStop(1, 'rgba(255,150,100,0)');
-    ctx.fillStyle = glow;
-    ctx.fillRect(0, 0, width, height);
-    ctx.fillStyle = '#fff6dc';
-    ctx.beginPath();
-    ctx.arc(sx + ox, sy, height * 0.022, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  // Streaks of cloud, lit underneath.
   let s = 11;
   const r = () => ((s = (s * 16807) % 2147483647) / 2147483647);
-  for (let i = 0; i < 26; i++) {
-    const y = horizon - height * (0.04 + r() * 0.2), x = r() * width, w = width * (0.05 + r() * 0.12);
-    ctx.fillStyle = `rgba(${230 + r() * 25},${150 + r() * 50},${130 + r() * 30},${0.12 + r() * 0.2})`;
-    ctx.beginPath();
-    ctx.ellipse(x, y, w, height * (0.004 + r() * 0.006), 0, 0, Math.PI * 2);
-    ctx.fill();
+  // The glow off the refineries, low along the horizon, strongest in two places.
+  for (const [cx, w, a] of [[0.15, 0.25, 0.32], [0.62, 0.2, 0.26], [0.88, 0.12, 0.16]]) {
+    for (const ox of [-width, 0, width]) {
+      const glow = ctx.createRadialGradient(cx * width + ox, horizon, 0, cx * width + ox, horizon, w * width);
+      glow.addColorStop(0, `rgba(255,140,60,${a})`);
+      glow.addColorStop(0.4, `rgba(200,90,50,${a * 0.4})`);
+      glow.addColorStop(1, 'rgba(120,60,40,0)');
+      ctx.fillStyle = glow;
+      ctx.fillRect(0, horizon - height * 0.3, width, height * 0.35);
+    }
+  }
+  for (let k = 0; k < 900; k++) {
+    const y = r() * horizon * 0.92;
+    ctx.fillStyle = `rgba(255,255,255,${(0.15 + r() * 0.6) * (1 - y / horizon)})`;
+    const sz = r() < 0.04 ? 2 : 1.1;
+    ctx.fillRect(r() * width, y, sz, sz);
+  }
+  // The moon.
+  const mx = u(MOON.x, MOON.z) * width, my = horizon - (Math.asin(MOON.y * 0.45) / Math.PI) * height;
+  const halo = ctx.createRadialGradient(mx, my, 0, mx, my, height * 0.12);
+  halo.addColorStop(0, 'rgba(220,230,255,0.35)');
+  halo.addColorStop(1, 'rgba(220,230,255,0)');
+  ctx.fillStyle = halo;
+  ctx.fillRect(mx - height * 0.12, my - height * 0.12, height * 0.24, height * 0.24);
+  ctx.fillStyle = '#eef0f6';
+  ctx.beginPath(); ctx.arc(mx, my, height * 0.018, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = 'rgba(180,186,200,0.6)';
+  for (const [dx, dy, rr] of [[-0.3, -0.2, 0.25], [0.25, 0.1, 0.18], [0.05, 0.35, 0.12]]) {
+    ctx.beginPath(); ctx.arc(mx + dx * height * 0.018, my + dy * height * 0.018, rr * height * 0.018, 0, Math.PI * 2); ctx.fill();
   }
   if (!ridge) return c;
-  // Far hills, purple in the haze, with the odd derrick and a town's lights on them.
-  ctx.fillStyle = '#8a6a78';
+  const ink = '#08070c';
+  // Low hills all round.
+  ctx.fillStyle = ink;
   ctx.beginPath();
-  ctx.moveTo(0, horizon + 4);
-  for (let x = 0; x <= width; x += 8) ctx.lineTo(x, horizon - 6 - 10 * (0.5 + 0.5 * Math.sin(x / 90)) - 8 * Math.sin(x / 23 + 1) ** 2);
-  ctx.lineTo(width, horizon + 4);
+  ctx.moveTo(0, horizon + 6);
+  for (let x = 0; x <= width; x += 6) ctx.lineTo(x, horizon - 4 - 6 * (0.5 + 0.5 * Math.sin(x / 70)) - 4 * Math.sin(x / 19 + 1) ** 2);
+  ctx.lineTo(width, height); ctx.lineTo(0, height);
   ctx.fill();
-  ctx.fillStyle = '#6a5262';
-  for (let i = 0; i < 18; i++) {
-    const x = r() * width, h = 10 + r() * 14, base = horizon - 8;
-    ctx.beginPath();
-    ctx.moveTo(x - 4, base); ctx.lineTo(x, base - h); ctx.lineTo(x + 4, base); ctx.fill();
+  // Refineries: towers, columns, stacks with flames, and their lights.
+  const refinery = (x0, w) => {
+    ctx.fillStyle = ink;
+    for (let x = x0; x < x0 + w; x += 4 + r() * 8) {
+      const h = 6 + r() * 26, bw = 3 + r() * 6;
+      ctx.fillRect(x, horizon - 8 - h, bw, h + 10);
+      if (r() < 0.3) { ctx.beginPath(); ctx.arc(x + bw / 2, horizon - 8, 6 + r() * 6, Math.PI, 0); ctx.fill(); }
+    }
+    for (let k = 0; k < 3; k++) {
+      const x = x0 + r() * w, h = 36 + r() * 30;
+      ctx.fillStyle = ink;
+      ctx.fillRect(x, horizon - 8 - h, 3, h);
+      const f = ctx.createRadialGradient(x + 1.5, horizon - 12 - h, 0, x + 1.5, horizon - 12 - h, 14);
+      f.addColorStop(0, 'rgba(255,230,160,1)'); f.addColorStop(0.3, 'rgba(255,140,40,0.8)'); f.addColorStop(1, 'rgba(255,90,20,0)');
+      ctx.fillStyle = f;
+      ctx.fillRect(x - 14, horizon - 30 - h, 32, 32);
+    }
+    for (let k = 0; k < w * 0.6; k++) {
+      ctx.fillStyle = `rgba(255,${190 + r() * 60},${110 + r() * 80},${0.5 + r() * 0.5})`;
+      ctx.fillRect(x0 + r() * w, horizon - 10 - r() * 34, 1.5, 1.5);
+    }
+  };
+  refinery(width * 0.08, width * 0.14);
+  refinery(width * 0.56, width * 0.12);
+  // Derricks across the fields, each with a red light on top.
+  for (let k = 0; k < 22; k++) {
+    const x = r() * width, h = 14 + r() * 16, base = horizon - 6;
+    ctx.strokeStyle = ink;
+    ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.moveTo(x - 5, base); ctx.lineTo(x, base - h); ctx.lineTo(x + 5, base); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,40,30,0.95)';
+    ctx.fillRect(x - 1, base - h - 2, 2, 2);
   }
-  for (let i = 0; i < 40; i++) {
-    const x = width * 0.62 + r() * width * 0.08, h = 6 + r() * 22;
-    ctx.fillRect(x, horizon - 8 - h, 3 + r() * 5, h);
-  }
-  for (let i = 0; i < 60; i++) {
-    ctx.fillStyle = `rgba(255,${200 + r() * 55},140,${0.4 + r() * 0.5})`;
-    ctx.fillRect(width * 0.62 + r() * width * 0.08, horizon - 8 - r() * 20, 1.5, 1.5);
+  // A town's lights in the distance.
+  for (let k = 0; k < 260; k++) {
+    ctx.fillStyle = `rgba(255,${200 + r() * 55},${130 + r() * 90},${0.3 + r() * 0.6})`;
+    ctx.fillRect(width * 0.3 + r() * width * 0.14, horizon - 4 - r() * 8, 1.2, 1.2);
   }
   return c;
 }
 
 /** Round the sky dome (SphereGeometry's u), and round the reflections (equirectangular). */
 const domeU = (dx, dz) => ((Math.atan2(dz, -dx) / (Math.PI * 2)) % 1 + 1) % 1;
-const envU = (dx, dz) => Math.atan2(dz, dx) / (Math.PI * 2) + 0.5;
+
+/** What the chrome, the paint and the puddles reflect: the night, and the sodium and neon of the town round them. */
+function paintRoom(width = 1024) {
+  const height = width / 2;
+  const c = document.createElement('canvas');
+  c.width = width; c.height = height;
+  const ctx = c.getContext('2d');
+  if (!ctx) return null;
+  const wall = ctx.createLinearGradient(0, 0, 0, height);
+  wall.addColorStop(0, '#141a30');
+  wall.addColorStop(0.45, '#0e0e18');
+  wall.addColorStop(0.55, '#1a120c');
+  wall.addColorStop(1, '#060504');
+  ctx.fillStyle = wall;
+  ctx.fillRect(0, 0, width, height);
+  ctx.globalCompositeOperation = 'lighter';
+  const glow = (x, y, rr, colour) => {
+    const g = ctx.createRadialGradient(x, y, 0, x, y, rr);
+    g.addColorStop(0, colour);
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(x - rr, y - rr, rr * 2, rr * 2);
+  };
+  glow(width * 0.3, height * 0.1, height * 0.18, 'rgba(200,210,255,0.35)');
+  const colours = ['rgba(255,170,80,0.8)', 'rgba(255,60,60,0.6)', 'rgba(255,200,120,0.7)', 'rgba(80,200,255,0.5)', 'rgba(255,170,80,0.8)', 'rgba(255,120,40,0.7)'];
+  for (let k = 0; k < 12; k++) glow(width * (0.04 + k * 0.083), height * (0.38 + (k % 3) * 0.05), height * 0.06, colours[k % colours.length]);
+  ctx.globalCompositeOperation = 'source-over';
+  return c;
+}
 
 export async function createStage(host) {
   const preference = new URLSearchParams(globalThis.location?.search ?? '').get('renderer');
@@ -137,9 +200,10 @@ export async function createStage(host) {
     };
   }
 
-  // Evening: a blue sky wash from above and warm bounce from the ground, the low sun, a cool fill opposite.
-  scene.add(new GFX.HemisphereLight(0xa8bce8, 0x6a5038, 0.85));
-  const key = new GFX.DirectionalLight(0xffd6a8, 2.5);
+  // Night: a dim blue wash, the moon for the shadows, a lantern over the hamster, and the lamps nearest it lit for real.
+  const hemi = new GFX.HemisphereLight(0x7a88c0, 0x2a1c14, 0.55);
+  scene.add(hemi);
+  const key = new GFX.DirectionalLight(0xb8c6ff, 0.75);
   key.castShadow = true;
   key.shadow.mapSize.set(2048, 2048);
   key.shadow.bias = -0.0003;
@@ -147,7 +211,7 @@ export async function createStage(host) {
   // The shadows cover what's in view: further out, a wider square.
   let span = 0;
   const shadowSpan = (zoom) => {
-    const want = Math.ceil(16 * Math.max(1, zoom));
+    const want = Math.ceil(14 * Math.max(1, zoom));
     if (want === span) return;
     span = want;
     Object.assign(key.shadow.camera, { left: -span, right: span, top: span, bottom: -span, near: 1, far: 100 + span * 2 });
@@ -155,8 +219,13 @@ export async function createStage(host) {
   };
   shadowSpan(1);
   scene.add(key, key.target);
-  const fill = new GFX.DirectionalLight(0x8aa0d8, 0.45);
-  scene.add(fill, fill.target);
+  const lantern = new GFX.PointLight(0xffe2b8, 2.2, 12, 1.1);
+  scene.add(lantern);
+  const lampLights = Array.from({ length: LAMP_LIGHTS }, () => {
+    const light = new GFX.PointLight(0xffffff, 0, 8, 1.2);
+    scene.add(light);
+    return light;
+  });
 
   // Opaque all round: the glass refracts whatever is behind it, and over
   // nothing at all it would bend the renderer's stand-in grey.
@@ -165,7 +234,7 @@ export async function createStage(host) {
   if (skyMap) skyMap.colorSpace = GFX.SRGBColorSpace;
   const backdrop = new GFX.Mesh(
     new GFX.SphereGeometry(300, 64, 32),
-    new GFX.MeshBasicMaterial({ name: 'backdrop', map: skyMap, color: new GFX.Color(skyMap ? '#ffffff' : '#d8a088'), side: GFX.BackSide, depthWrite: false }),
+    new GFX.MeshBasicMaterial({ name: 'backdrop', map: skyMap, color: new GFX.Color(skyMap ? '#ffffff' : '#070a1c'), side: GFX.BackSide, depthWrite: false }),
   );
   backdrop.renderOrder = -1;
   backdrop.frustumCulled = false;
@@ -175,7 +244,7 @@ export async function createStage(host) {
   };
   scene.add(backdrop);
 
-  const room = paintSky(envU, { width: 1024, ridge: false });
+  const room = paintRoom();
   if (room) {
     const texture = new GFX.Texture(room);
     texture.mapping = GFX.EquirectangularReflectionMapping;
@@ -187,7 +256,9 @@ export async function createStage(host) {
   }
 
   const stage = {
-    GFX, renderer, scene, camera, key,
+    GFX, renderer, scene, camera, key, hemi, lantern, lampLights,
+    /** Where the hamster is, for the lantern; set every frame. */
+    hamster: new GFX.Vector3(),
     view: createView(),
     target: new GFX.Vector3(),
   };
@@ -206,12 +277,10 @@ export async function createStage(host) {
     shadowSpan(stage.view.zoom);
     camera.lookAt(stage.target);
     camera.updateMatrixWorld();
-    key.position.copy(stage.target).addScaledVector(SUN, 45 + span);
+    key.position.copy(stage.target).addScaledVector(MOON, 45 + span);
     key.target.position.copy(stage.target);
     key.target.updateMatrixWorld();
-    fill.position.copy(stage.target).add(new GFX.Vector3(4, 5, -8));
-    fill.target.position.copy(stage.target);
-    fill.target.updateMatrixWorld();
+    lantern.position.set(stage.hamster.x + 0.6, stage.hamster.y + 3.5, stage.hamster.z + 0.6);
   };
 
   const fit = () => renderer.setSize(host.clientWidth || 1, host.clientHeight || 1);

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { buildMap, linearRGB, TownMap } from '../src/map.js';
+import { buildMap, DEPTH, linearRGB, TownMap } from '../src/map.js';
 
 const map = (cols = 10, rows = 10) => new TownMap({ name: 't', cols, rows });
 const near = (a, b, e = 1e-9) => Math.abs(a - b) < e;
@@ -21,19 +21,32 @@ test('tiles off the map are refused', () => {
   assert.throws(() => map(4, 4).flat(3, 3, 2, 1, 0), /off the map/);
 });
 
+/** The walls of every texture, together. */
+function allWalls(byTexture) {
+  const parts = [...byTexture.values()];
+  return { position: parts.flatMap((w) => [...w.position]), normal: parts.flatMap((w) => [...w.normal]) };
+}
+
 test('every face is a finite triangle; tops face up, grouped by surface; walls face out', () => {
   const c = map(6, 6);
   c.flat(2, 2, 1, 1, 3, { surface: 'road' });
   c.flat(3, 2, 1, 1, 3, { surface: 'grass' });
-  const { tops, walls, world } = buildMap(c);
+  const { tops, walls: byTexture, world } = buildMap(c);
+  const walls = allWalls(byTexture);
   assert.deepEqual([...tops.keys()].sort(), ['grass', 'road']);
   for (const t of tops.values()) {
     assert.equal(t.position.length, 2 * 9);
     for (let i = 1; i < t.normal.length; i += 3) assert.equal(t.normal[i], 1);
     for (const v of [...t.position, ...t.uv]) assert.ok(Number.isFinite(v));
   }
-  // Two tiles side by side: six sides out, two triangles each, each facing away from the pair.
-  assert.equal(walls.position.length / 9, 12);
+  // Two tiles side by side, alone: six sides out, reaching DEPTH down (in bands, for the textures), each facing away from the pair.
+  let area = 0;
+  for (let t = 0; t < walls.position.length / 9; t++) {
+    const p = walls.position.slice(t * 9, t * 9 + 9);
+    const u = [p[3] - p[0], p[4] - p[1], p[5] - p[2]], v = [p[6] - p[0], p[7] - p[1], p[8] - p[2]];
+    area += Math.hypot(u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]) / 2;
+  }
+  assert.ok(near(area, 6 * DEPTH, 1e-6), `wall area ${area}`);
   for (let t = 0; t < walls.position.length / 9; t++) {
     const p = walls.position.slice(t * 9, t * 9 + 9);
     const cx = (p[0] + p[3] + p[6]) / 3 - 3, cz = (p[2] + p[5] + p[8]) / 3 - 2.5;
@@ -47,7 +60,7 @@ test('every face is a finite triangle; tops face up, grouped by surface; walls f
 test('a curb has one wall, on the high side, facing the low one', () => {
   const c = map(6, 3);
   c.flat(1, 1, 2, 1, 0.15, { surface: 'sidewalk' }).flat(3, 1, 2, 1, 0, { surface: 'road' });
-  const { walls } = buildMap(c);
+  const walls = allWalls(buildMap(c).walls);
   const between = [];
   for (let t = 0; t < walls.position.length / 9; t++) {
     const p = walls.position.slice(t * 9, t * 9 + 9);

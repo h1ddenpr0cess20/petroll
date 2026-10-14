@@ -4,6 +4,7 @@ import { createPickups } from './pickups.js';
 import { rollSpin, turn } from './physics.js';
 import { createRun, putBack, respawn, STEP, stepRun, toGround } from './run.js';
 import { createWorldMeshes } from './scenery.js';
+import { LAMP_LIGHTS } from './stage.js';
 import { HOME } from './view.js';
 
 /**
@@ -30,6 +31,8 @@ export function createGame({ stage, hud, input, audio, storage }) {
   const tint = TINTS.blue;
   const { player, spin, run: runAnimation } = createPlayer(GFX, { tint });
   scene.add(player);
+  const xray = createXray(GFX);
+  scene.add(xray.sprite);
 
   let saved = storage.load();
   let run = createRun(GFX, { found: saved.found });
@@ -56,6 +59,23 @@ export function createGame({ stage, hud, input, audio, storage }) {
   const seen = new Set();
 
   const found = () => run.golden.filter((g) => g.got).length;
+
+  // The town's lamps, where their light comes from; the nearest few light the hamster for real.
+  const lamps = run.map.lamps.map((l) => ({ ...l, y: (l.y ?? run.map.heightAt(l.x, l.z) ?? 0) + l.height, color: new GFX.Color(l.colour) }));
+  let lampTimer = 0;
+  /** The real lights to the lamps nearest (x, z), and the flares that are burning. */
+  function lightUp(x, z) {
+    const near = lamps.map((l) => ({ l, d: Math.hypot(l.x - x, l.z - z) - l.reach * 0.3 })).sort((a, b) => a.d - b.d);
+    stage.lampLights.forEach((light, i) => {
+      const n = near[i];
+      if (!n || n.d > 14) { light.intensity = 0; return; }
+      light.position.set(n.l.x, n.l.y - 0.15, n.l.z);
+      light.color.copy(n.l.color);
+      light.distance = n.l.reach * 1.25;
+      light.intensity = 1.6 * n.l.glow;
+    });
+  }
+  void LAMP_LIGHTS;
 
   function enter(next) {
     state = next;
@@ -245,6 +265,11 @@ export function createGame({ stage, hud, input, audio, storage }) {
     streakTimer -= dt;
     if (streakTimer <= 0) streak = 0;
 
+    // The lantern over the hamster, and the lamps round it.
+    stage.hamster.set(b.x, b.y, b.z);
+    lampTimer -= dt;
+    if (lampTimer <= 0) { lampTimer = 0.2; lightUp(b.x, b.z); }
+
     // The ball and the hamster in it.
     player.position.set(b.x, b.y, b.z);
     player.visible = !(state === 'lost' && lostHow !== 'sunk');
@@ -258,6 +283,7 @@ export function createGame({ stage, hud, input, audio, storage }) {
     runAnimation(dt, state === 'title' ? 0 : speed, heading);
 
     world.userData.uncover(b, dt);
+    xray.update(dt, b, stage.camera.position, run.map, player.visible);
     run.traffic.sync();
     run.hazards.sync(dt, run.time);
     pickups.sync(dt, run.time);
@@ -309,5 +335,55 @@ export function createGame({ stage, hud, input, audio, storage }) {
       return { x: rect.left + (v.x + 1) / 2 * rect.width, y: rect.top + (1 - v.y) / 2 * rect.height };
     },
     debug,
+  };
+}
+
+/**
+ * The ball, seen through what's in front of it: when a house or a tank is
+ * between the camera and the ball, a ring where the ball is, drawn over
+ * everything, so the hamster is never lost behind the scenery.
+ */
+function createXray(GFX) {
+  let map = null;
+  if (typeof document !== 'undefined') {
+    const c = document.createElement('canvas');
+    c.width = c.height = 128;
+    const g = c.getContext('2d');
+    g.fillStyle = 'rgba(140, 200, 255, 0.18)';
+    g.beginPath(); g.arc(64, 64, 58, 0, Math.PI * 2); g.fill();
+    g.strokeStyle = 'rgba(200, 235, 255, 0.95)';
+    g.lineWidth = 7;
+    g.beginPath(); g.arc(64, 64, 56, 0, Math.PI * 2); g.stroke();
+    g.fillStyle = 'rgba(255, 210, 150, 0.8)';
+    g.beginPath(); g.ellipse(64, 74, 20, 15, 0, 0, Math.PI * 2); g.fill();
+    map = new GFX.CanvasTexture(c);
+    map.colorSpace = GFX.SRGBColorSpace;
+  }
+  const material = new GFX.SpriteMaterial({ map, transparent: true, opacity: 0, depthTest: false, depthWrite: false });
+  const sprite = new GFX.Sprite(material);
+  sprite.renderOrder = 1000;
+  sprite.visible = false;
+  let shown = 0;
+  return {
+    sprite,
+    update(dt, b, eye, townMap, visible) {
+      // Along the line from the eye to the ball, is anything standing higher than the line?
+      let hidden = false;
+      const dx = b.x - eye.x, dy = b.y - eye.y, dz = b.z - eye.z;
+      const far = Math.hypot(dx, dy, dz);
+      for (let d = 0.2; d < far && !hidden; d += 0.25) {
+        if (d < b.r * 2.5) continue;
+        const x = b.x - dx * (d / far), y = b.y - dy * (d / far), z = b.z - dz * (d / far);
+        // (A little round each point, for the eaves.)
+        const top = Math.max(...[[0, 0], [0.3, 0.3], [-0.3, 0.3], [0.3, -0.3], [-0.3, -0.3]].map(([ox, oz]) => townMap.heightAt(x + ox, z + oz) ?? -Infinity));
+        if (top > y + 0.05) hidden = true;
+        else if (townMap.cylinders.some((c) => c.r > 1.5 && c.y1 > y && Math.hypot(x - c.x, z - c.z) < c.r)) hidden = true;
+      }
+      shown += ((hidden && visible ? 1 : 0) - shown) * Math.min(1, dt * 10);
+      material.opacity = shown;
+      sprite.visible = shown > 0.02;
+      sprite.position.set(b.x, b.y, b.z);
+      sprite.scale.setScalar(b.r * 2.1);
+    },
   };
 }

@@ -3,6 +3,7 @@ import { createAudio } from './audio.js';
 import { createGame } from './game.js';
 import { createHud } from './hud.js';
 import { createInput } from './input.js';
+import { bakeAll } from './models/library.js';
 import { createStage } from './stage.js';
 import { createStorage } from './storage.js';
 
@@ -26,6 +27,11 @@ const input = createInput(view, {
 
 try {
   const stage = await createStage(view);
+  // The models bake in the background while the title waits, with a bar for how far it has got.
+  const bar = document.getElementById('loading');
+  bar.hidden = false;
+  await bakeAll(stage.GFX, (k) => { bar.style.setProperty('--done', `${Math.round(k * 100)}%`); });
+  bar.hidden = true;
   game = createGame({ stage, hud, input, audio, storage: createStorage() });
   globalThis.petroll = game;
 

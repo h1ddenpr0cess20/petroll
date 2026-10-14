@@ -1,3 +1,5 @@
+import { windowLamps } from './buildings.js';
+import { structureLights } from './structures.js';
 import { TownMap } from './map.js';
 
 /**
@@ -140,6 +142,8 @@ export function createTown() {
   oilField(c, P);
   refinery(c);
   traffic(c);
+  windowLamps(c);
+  structureLights(c);
 
   c.district('Maple Grove', 3, 3, 44, 57, '#7cb257');
   c.district('Downtown', 47, 3, 49, 57, '#8a8f9a');
@@ -183,9 +187,12 @@ function streets(c) {
     }
   }
   // Street lamps on the corners, trees along the avenue.
-  for (const x of DOWN) for (const z of ACROSS) c.prop('lamp', x - 0.5, z - 0.5);
-  for (let x = 8; x < 92; x += 6) if (!inStreet(x, [26, 46])) c.prop('tree', x + 0.5, 57.5, { size: 0.9 + (x % 3) * 0.1 });
-  for (let z = 12; z < 50; z += 7) c.prop('tree', 3.5, z + 0.5, { size: 1.1 });
+  // Street lamps on the corners, their arms out over the junction; more along the long blocks.
+  for (const x of DOWN) for (const z of ACROSS) c.place('streetlamp', x - 0.5, z - 0.5, { angle: -Math.PI / 4 });
+  for (const x of DOWN) for (const z of [18.5, 41.5]) c.place('streetlamp', x - 0.5, z, { angle: 0 });
+  for (const z of ACROSS) for (const x of [17.5, 37.5, 57.5, 77.5]) c.place('streetlamp', x, z - 0.5, { angle: -Math.PI / 2 });
+  for (let x = 8; x < 92; x += 6) if (!inStreet(x, [26, 46])) c.place(x % 4 ? 'tree' : 'pine', x + 0.5, 57.5, { scale: 0.9 + (x % 3) * 0.1, angle: x });
+  for (let z = 12; z < 50; z += 7) c.place('pine', 3.5, z + 0.5, { scale: 1.1, angle: z });
 }
 
 /** A block: a raised sidewalk all round, and what's inside on top of it. */
@@ -195,13 +202,12 @@ function block(c, x, z, w, d, inside = 'lawn') {
 }
 
 function house(c, x, z, w, d, wall, { ridge = 'x', door = 'n' } = {}) {
-  c.block(x, z, w, d, CURB + 1.6, { roof: 'pitched', ridge, wall, pitch: 1.0 });
-  c.prop('house', x, z, { w, d, h: CURB + 1.6, wall, ridge, door });
+  c.block(x, z, w, d, CURB + 1.6, { roof: 'pitched', ridge, wall, pitch: 1.0, facade: 'house', base: CURB, door, lit: 0.55 });
 }
 
 /** A hedge (or any wall): drawn, and solid. */
-function wall(c, x0, z0, x1, z1, y0, y1, colour, finish = 'matte') {
-  c.prop('wall', x0, z0, { x1, z1, y0, y1, colour, finish });
+function wall(c, x0, z0, x1, z1, y0, y1, colour, finish = 'matte', tex = null) {
+  c.prop('wall', x0, z0, { x1, z1, y0, y1, colour, finish, tex });
   c.solid(x0, y0, z0, x1, y1, z1);
 }
 
@@ -216,9 +222,10 @@ function mapleGrove(c) {
   house(c, 18, 20, 5, 5, walls[4], { door: 's' });
   c.paint(14, 11, 1, 1, 'concrete');
   c.airPump('Home', 20.5, 18.5);
-  c.prop('mailbox', 14.5, 10.6);
-  c.prop('tree', 24, 18.5, { size: 1.2 });
-  c.prop('tree', 11.5, 18.5, { size: 1 });
+  c.place('mailbox', 15.6, 10.6, { turn: 2 });
+  c.place('tree', 24, 18.5, { scale: 1.1 });
+  c.place('tree', 11.5, 18.5, { scale: 0.95, angle: 1 });
+  c.place('hydrant', 9.6, 26.4);
   c.goldenSeed('Home sweet home', 23.5, 25.5);
   c.seedLine(17.5, 13, 17.5, 25, 7);
 
@@ -242,14 +249,15 @@ function mapleGrove(c) {
     const t = 0.4;
     // gap: which side has the way in, 'n' or 's'; the way in is two tiles in the middle.
     const mid = (x0 + x1) / 2;
+    const hedge = (a, b, cc, d) => wall(c, a, b, cc, d, CURB, top, g, 'matte', 'hedge');
     const side = (zz, open) => {
-      if (open) { wall(c, x0, zz, mid - 1, zz + t, CURB, top, g); wall(c, mid + 1, zz, x1, zz + t, CURB, top, g); }
-      else wall(c, x0, zz, x1, zz + t, CURB, top, g);
+      if (open) { hedge(x0, zz, mid - 1, zz + t); hedge(mid + 1, zz, x1, zz + t); }
+      else hedge(x0, zz, x1, zz + t);
     };
     side(z0, gap === 'n');
     side(z1 - t, gap === 's');
-    wall(c, x0, z0, x0 + t, z1, CURB, top, g);
-    wall(c, x1 - t, z0, x1, z1, CURB, top, g);
+    hedge(x0, z0, x0 + t, z1);
+    hedge(x1 - t, z0, x1, z1);
   };
   ring(12, 34, 24, 50, 'n');
   ring(14.2, 36.2, 21.8, 47.8, 's');
@@ -273,15 +281,12 @@ function mapleGrove(c) {
 function downtown(c) {
   // Offices, and the alley behind them.
   block(c, 50, 10, 16, 18, 'concrete');
-  c.block(51, 11, 7, 9, CURB + 7, { wall: '#9fb0c4' });
-  c.prop('tower', 51, 11, { w: 7, d: 9, h: CURB + 7, glass: '#7aa0c8' });
-  c.block(51, 21, 7, 6, CURB + 5, { wall: '#c4b49f' });
-  c.prop('tower', 51, 21, { w: 7, d: 6, h: CURB + 5, glass: '#b8c8d8' });
-  c.block(59, 11, 6, 16, CURB + 9.5, { wall: '#7d8a9a' });
-  c.prop('tower', 59, 11, { w: 6, d: 16, h: CURB + 9.5, glass: '#5a7ea8' });
+  c.block(51, 11, 7, 9, CURB + 7.2, { wall: '#a8b4c4', facade: 'office', base: CURB, lit: 0.35 });
+  c.block(51, 21, 7, 6, CURB + 6, { wall: '#c87a5a', facade: 'brick', base: CURB, lit: 0.45, door: 's' });
+  c.block(59, 11, 6, 16, CURB + 9.9, { wall: '#8a98aa', facade: 'office', base: CURB, lit: 0.3 });
   for (const [x, col] of [[53, '#3a7a3a'], [61.5, '#3d6ea0']]) {
-    c.prop('dumpster', x, 27.5, { colour: col });
-    c.solid(x - 0.7, CURB, 27.1, x + 0.7, CURB + 0.9, 27.9);
+    c.place('dumpster', x, 27.5, { turn: 2 });
+    void col;
   }
   c.goldenSeed('Down the back alley', 58.5, 25.5);
   c.seedLine(58.5, 14, 58.5, 24, 5);
@@ -298,16 +303,17 @@ function downtown(c) {
   c.flat(83, 25, 2, 2, 3.1, { surface: 'concrete' });
   c.slope(75, 25, 8, 2, 4.1, 3.1, 'x', { surface: 'concrete' });
   c.flat(73, 25, 2, 2, 4.1, { surface: 'concrete' });
-  c.flat(73, 13, 10, 12, 4.1, { surface: 'concrete', wall: '#a7a39a' });
-  c.prop('garage', 73, 13, { w: 10, d: 12, h: 4.1 });
+  c.block(73, 13, 10, 12, 4.1, { surface: 'concrete', wall: '#b0aca2', facade: 'garage', base: CURB, lit: 0 });
   const par = '#bdb8ab';
-  wall(c, 70.8, 11, 71, 25, 0, 1.6, par);
-  wall(c, 71, 10.8, 85, 11, 0, 2.6, par);
-  wall(c, 85, 11, 85.2, 27, 0, 3.6, par);
-  wall(c, 73, 27, 85, 27.2, 0, 4.6, par);
+  wall(c, 70.8, 11, 71, 25, 0, 1.6, par, 'matte', 'block');
+  wall(c, 71, 10.8, 85, 11, 0, 2.6, par, 'matte', 'block');
+  wall(c, 85, 11, 85.2, 27, 0, 3.6, par, 'matte', 'block');
+  wall(c, 73, 27, 85, 27.2, 0, 4.6, par, 'matte', 'block');
   c.goldenSeed('Top of the car park', 78, 19, { y: 4.1 });
   c.seedLine(72, 23, 72, 14, 5).seedLine(75, 12, 81, 12, 4).seedLine(84, 14, 84, 23, 5).seedLine(81, 26, 75, 26, 4);
-  for (const [x, z, col] of [[75, 15, '#c8382c'], [79, 21, '#2c6ec8'], [76, 22, '#e8e2d6']]) c.prop('parked', x, z, { colour: col, axis: 'z', y: 4.1 });
+  for (const [x, z, col, m] of [[75, 15, '#c8382c', 'sedan'], [79, 21, '#2c6ec8', 'hatchback'], [76.5, 22, '#e8e2d6', 'sedan']]) {
+    c.place(m, x, z, { paint: col, y: 4.1 });
+  }
 
   // The plaza: a fountain to roll round, a statue of somebody's hamster.
   block(c, 50, 32, 16, 20, 'brick');
@@ -317,10 +323,9 @@ function downtown(c) {
   }, { surface: 'pool' });
   c.prop('fountain', 58, 42);
   c.goldenSeed('In the fountain', 56.4, 42);
-  c.prop('statue', 52.5, 48.5);
-  c.solid(51.9, CURB, 47.9, 53.1, CURB + 1.4, 49.1);
-  for (const [x, z] of [[53, 36], [63, 36], [53, 48.5], [63, 47]]) c.prop('tree', x, z, { size: 1.1 });
-  c.prop('bench', 56, 35.6).prop('bench', 60, 49.4);
+  c.place('statue', 52.5, 48.5, { turn: 2 });
+  for (const [x, z] of [[53, 36], [63, 36], [53, 48.5], [63, 47]]) c.place('tree', x, z, { scale: 1.05, angle: x });
+  c.place('bench', 56, 35.6, { turn: 2 }).place('bench', 60, 49.4).place('bin', 58.2, 35.5, { scale: 0.7 });
   c.airPump('Downtown', 62.5, 42.5);
   c.seedLine(52, 42, 54, 42, 2).seedLine(62, 38, 62, 46, 4);
 
@@ -335,7 +340,7 @@ function downtown(c) {
   c.solid(79.4, CURB, 44.4, 80.6, 14, 45.6);
   c.goldenSeed('Hard hat area', 71.6, 39.8, { y: 4.1 });
   c.seedLine(75, 35, 82, 35, 4).seedLine(82, 37, 75, 37, 4);
-  for (const [x, z] of [[72, 46], [76, 49], [84, 41]]) c.prop('cone', x, z);
+  for (const [x, z] of [[72, 46], [76, 49], [84, 41], [72.6, 46.4], [77, 49.3]]) c.place('cone', x, z);
   c.drum(74, 46, { range: 6 });
   c.drum(83, 48, { range: 6 });
 }
@@ -347,8 +352,7 @@ function gasStation(c) {
   c.flat(103, 44, 1, 6, 0.2, { surface: 'concrete' });
   for (const z of [45.2, 48.2]) {
     for (const x of [99.5, 103.5]) {
-      c.prop('pump', x, z + 0.5);
-      c.solid(x - 0.3, 0.2, z + 0.1, x + 0.3, 1.5, z + 0.9);
+      c.place('gaspump', x, z + 0.5, { y: 0.2, scale: 0.95 });
     }
   }
   c.prop('canopy', 97, 42, { w: 10, d: 10, h: 2.7 });
@@ -357,18 +361,18 @@ function gasStation(c) {
   for (let x = 96.5; x < 111; x += 3) c.mark(x, 64.4, 2, 0.12);
 
   // The shop, with a loading ramp up its side.
-  c.block(102, 56, 7, 8, 2.4, { wall: '#e8e2d6' });
+  c.block(102, 56, 7, 8, 2.4, { wall: '#ece6da', facade: 'shop', base: 0, door: 'n', lit: 1 });
   c.prop('shop', 102, 56, { w: 7, d: 8, h: 2.4 });
   c.slope(109, 56, 2, 7, 0, 2.4, 'z', { surface: 'concrete' });
   c.flat(109, 63, 2, 1, 2.4, { surface: 'concrete' });
   c.flat(102, 64, 9, 1, 0, { surface: 'forecourt' });
-  wall(c, 110.9, 56, 111.1, 64, 0, 3, '#bdb8ab');
+  wall(c, 110.9, 56, 111.1, 64, 0, 3, '#bdb8ab', 'matte', 'block');
   c.goldenSeed("On the Gas 'n' Go", 105.5, 58.5, { y: 2.4 });
   c.airPump("Gas 'n' Go", 98.5, 55.5);
 
   // The car wash: a tunnel, wet all through.
-  c.block(96, 57, 6, 1, 2.2, { wall: '#3d8ad0' });
-  c.block(96, 63, 6, 1, 2.2, { wall: '#3d8ad0' });
+  c.block(96, 57, 6, 1, 2.2, { wall: '#5a9ad8', wtex: 'corrugated' });
+  c.block(96, 63, 6, 1, 2.2, { wall: '#5a9ad8', wtex: 'corrugated' });
   c.flat(96, 58, 6, 5, 0, { surface: 'wet' });
   c.deck(95.8, 56.8, 6.4, 7.4, 2.5, { colour: '#e8e4dc', roof: true });
   c.prop('carwash', 96, 58, { w: 6, d: 5 });
@@ -390,12 +394,12 @@ function gasStation(c) {
   // North of the forecourt: a junkyard.
   c.flat(96, 8, 15, 24, 0, { surface: 'gravel' });
   for (const [x, z, col, r] of [[99, 12, '#8a3a26', 0.3], [104, 11, '#4a6a8a', 1.2], [99, 18, '#6a7a3a', 2.1], [106, 19, '#8a8a8e', 0.6], [101, 26, '#a05a2a', 1.6]]) {
-    c.prop('junker', x, z, { colour: col, turn: r });
-    c.solid(x - 0.9, 0, z - 0.9, x + 0.9, 0.9, z + 0.9);
+    c.place('junker', x, z, { angle: r * 1.3 });
+    c.cylinder(x, z, 0.9, 0, 0.9);
+    void col;
   }
   for (const [x, z] of [[108, 14], [108, 25], [97, 30]]) {
-    c.prop('tires', x, z);
-    c.solid(x - 0.45, 0, z - 0.45, x + 0.45, 1.1, z + 0.45);
+    c.place('tyres', x, z, { angle: x });
   }
   c.seedLine(97, 15, 109, 15, 6).seedLine(103, 22, 103, 30, 4);
 }
@@ -480,8 +484,8 @@ function oilField(c, P) {
   // The barrel yard: stacks to weave through, and drums that roll after you.
   const Y = P.yard;
   for (const [x, z] of [[89, 99], [92, 101], [95, 98.5], [89, 104], [93, 105], [96.5, 102.5]]) {
-    c.prop('drums', x, z, { y: Y });
-    c.solid(x - 0.75, Y, z - 0.75, x + 0.75, Y + 1.8, z + 0.75);
+    for (const [dx, dz, dy] of [[-0.33, -0.33, 0], [0.33, -0.33, 0], [-0.33, 0.33, 0], [0.33, 0.33, 0], [0, 0, 0.88]]) c.place('drum', x + dx, z + dz, { y: Y + dy, angle: dx * 7 + dz * 3 });
+    c.solid(x - 0.7, Y, z - 0.7, x + 0.7, Y + 1.8, z + 0.7);
   }
   c.drum(91, 99); c.drum(96, 105);
   c.goldenSeed('In the barrel yard', 97.5, 105.5, { y: Y });
@@ -504,8 +508,8 @@ function oilField(c, P) {
     const x = FIELD.x0 + 2 + rnd() * (FIELD.x1 - FIELD.x0 - 4), z = FIELD.z0 + 2 + rnd() * (FIELD.z1 - FIELD.z0 - 4);
     if (!open(x, z)) continue;
     const k = rnd();
-    if (k < 0.55) c.prop('shrub', x, z, { size: 0.7 + rnd() * 0.8 });
-    else c.prop('rock', x, z, { size: 0.6 + rnd() * 1.2 });
+    if (k < 0.6) c.place('shrub', x, z, { scale: 0.7 + rnd() * 0.8, angle: rnd() * 6 });
+    else c.place('rock', x, z, { scale: 0.6 + rnd() * 1.1, angle: rnd() * 6 });
   }
 
   // Seeds along the roads.
@@ -519,13 +523,10 @@ function refinery(c) {
   c.airPump('Refinery Gate', 32.5, 63.5);
 
   /** A tank: the tiles inside its circle at its height, and a drum drawn round them. */
+  /** A tank: solid as the cylinder it's drawn as, its roof something to stand on. */
   const tank = (cx, cz, r, h, colour = '#e8e4dc') => {
-    for (let z = Math.floor(cz - r); z <= cz + r; z++) {
-      for (let x = Math.floor(cx - r); x <= cx + r; x++) {
-        if (Math.hypot(x + 0.5 - cx, z + 0.5 - cz) <= r) c.flat(x, z, 1, 1, h, { surface: 'metal', wall: colour });
-      }
-    }
-    c.prop('tank', cx, cz, { r: r + 0.62, h, colour });
+    c.cylinder(cx, cz, r, 0, h);
+    c.prop('tank', cx, cz, { r, h, colour });
   };
   tank(12, 70, 4.5, 3);
   tank(12, 88, 5, 6, '#d8d0c0');
@@ -545,8 +546,8 @@ function refinery(c) {
   c.goldenSeed('Top of the big tank', 12.5, 88.5, { y: 6 });
 
   // Flare alley: the gas comes up out of the floor.
-  c.block(32, 82, 1, 26, 1.4, { wall: '#7a8189' });
-  c.block(37, 82, 1, 26, 1.4, { wall: '#7a8189' });
+  c.block(32, 82, 1, 26, 1.4, { wall: '#8a9098', wtex: 'block', surface: 'metal' });
+  c.block(37, 82, 1, 26, 1.4, { wall: '#8a9098', wtex: 'block', surface: 'metal' });
   // In rows, each row going up a little after the one before: a wave of fire down the alley, with a gap behind it to ride.
   for (let k = 0; k < 6; k++) {
     c.flare(33 + (k % 2 ? 0 : 2), 85 + k * 3.8, { period: 2.8, phase: -k * 0.35, burn: 0.3 });
@@ -565,8 +566,8 @@ function refinery(c) {
     c.prop('cylinders', x, z);
     c.solid(x - 0.2, 0, z - 0.2, x + 0.55, 1.1, z + 0.55);
   }
-  c.block(34, 112, 5, 4, 2.2, { wall: '#c8c2b4' });
-  c.block(4, 62, 4, 3, 2.0, { wall: '#d8d2c4' });
+  c.block(34, 112, 5, 4, 2.2, { wall: '#c8c2b4', wtex: 'corrugated' });
+  c.block(4, 62, 4, 3, 2.0, { wall: '#d8d2c4', wtex: 'corrugated' });
 
   // Pipes on racks overhead, a sphere tank, drums.
   c.prop('piperack', 4, 79, { to: 30 });

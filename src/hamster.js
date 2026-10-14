@@ -24,6 +24,42 @@ export const TINTS = Object.freeze({ blue: '#5aa8f0', clear: '#e8f2fa', pink: '#
 const FUR = pelt({ over: '#cf8440', under: '#f4e6cc', vary: 0.1, freq: 18, grain: 0.06, gfreq: 120, strands: 0.18, sfreq: 220, flow: 2, edge: [-0.15, 0.45] });
 const PINK = '#eba0a0';
 
+/** Where the legs hang from on the body (as sculpted): shoulders and hips, left and right. */
+const LEGS = [
+  { at: [-0.055, 0.1, 0.12], def: 'front', phase: 0 },
+  { at: [0.055, 0.1, 0.12], def: 'front', phase: Math.PI },
+  { at: [-0.075, 0.1, -0.08], def: 'hind', phase: Math.PI },
+  { at: [0.075, 0.1, -0.08], def: 'hind', phase: 0 },
+];
+
+/** How far the body stands up off the floor on its legs (as sculpted). */
+const STAND = 0.04;
+
+/** A front leg, hanging from its shoulder at the origin: a furry forearm, a little pink hand with its fingers. */
+const FRONT_LEG = {
+  name: 'hamster-front-leg',
+  cell: 0.004,
+  materials: { fur: { roughness: 0.82, sheen: 1, sheenColor: '#ffe2bc', sheenRoughness: 0.5 }, skin: { roughness: 0.55 } },
+  sculpt(s) {
+    s.limb([0, 0.0, 0], [0, -0.07, 0.01], 0.024, 0.016, { color: '#f2e2c6', mat: 'fur', k: 0.01 });
+    s.ellipsoid([0, -0.088, 0.02], [0.017, 0.01, 0.022], { color: PINK, mat: 'skin', k: 0.01 });
+    for (const dx of [-0.009, 0, 0.009]) s.limb([dx, -0.092, 0.03], [dx * 1.2, -0.094, 0.044], 0.0045, 0.003, { color: PINK, mat: 'skin', k: 0.003 });
+  },
+};
+
+/** A hind leg, from its hip at the origin: a fat haunch, a long pink foot flat to the ground. */
+const HIND_LEG = {
+  name: 'hamster-hind-leg',
+  cell: 0.0045,
+  materials: FRONT_LEG.materials,
+  sculpt(s) {
+    s.ellipsoid([0, -0.025, 0], [0.032, 0.04, 0.038], { color: FUR, mat: 'fur', k: 0.012 });
+    s.limb([0, -0.04, -0.008], [0, -0.084, 0.0], 0.02, 0.014, { color: '#f2e2c6', mat: 'fur', k: 0.01 });
+    s.ellipsoid([0, -0.092, 0.018], [0.019, 0.009, 0.038], { color: PINK, mat: 'skin', k: 0.01 });
+    for (const dx of [-0.01, 0, 0.01]) s.limb([dx, -0.095, 0.045], [dx * 1.2, -0.096, 0.058], 0.0045, 0.003, { color: PINK, mat: 'skin', k: 0.003 });
+  },
+};
+
 const HAMSTER = {
   name: 'hamster',
   cell: 0.0065,
@@ -54,10 +90,6 @@ const HAMSTER = {
     // Nose, mouth, feet, tail.
     s.sphere([0, 0.158, 0.213], 0.012, { color: '#e07a86', mat: 'nose', k: 0.006 });
     s.limb([0, 0.142, 0.21], [0, 0.128, 0.205], 0.0035, 0.003, { op: 'sub', k: 0.004 });
-    s.mirror((m) => {
-      s.limb([m * 0.05, 0.05, 0.13], [m * 0.045, 0.012, 0.165], 0.016, 0.014, { color: PINK, mat: 'skin', k: 0.012 });
-      s.ellipsoid([m * 0.072, 0.012, -0.075], [0.028, 0.013, 0.045], { color: PINK, mat: 'skin', k: 0.015 });
-    });
     s.sphere([0, 0.085, -0.212], 0.016, { color: PINK, mat: 'skin', k: 0.01 });
     // Eyes: big, black and glassy.
     s.part('eyes', () => s.mirror((m) => s.sphere([m * 0.056, 0.192, 0.158], 0.022, { color: '#0c0809', mat: 'eye', k: 0.002 })));
@@ -140,23 +172,40 @@ export function createHamster(GFX, { radius = RADIUS } = {}) {
   body.castShadow = true;
   body.name = 'hamster-body';
   // A little smaller than sculpted, and its feet a little up the curve, so nothing pokes through the plastic.
-  body.scale.setScalar(0.88);
-  const floor = -radius + 0.05;
+  const SCALE = 0.88;
+  const floor = -radius + 0.045;
 
   const hamster = new GFX.Group();
   hamster.name = 'hamster';
   const bob = new GFX.Group();
   bob.position.y = floor;
+  bob.scale.setScalar(SCALE);
+  body.position.y = STAND;
   bob.add(body);
   hamster.add(bob);
+
+  // The legs, each on a hinge at its shoulder or hip.
+  const legs = LEGS.map((l) => {
+    const { geometry: g, materials: m } = bake(GFX, l.def === 'front' ? FRONT_LEG : HIND_LEG);
+    const hinge = new GFX.Group();
+    hinge.position.set(l.at[0], l.at[1], l.at[2]);
+    const mesh = new GFX.Mesh(g, m);
+    mesh.castShadow = true;
+    mesh.name = `leg-${l.def}`;
+    hinge.add(mesh);
+    bob.add(hinge);
+    return { ...l, hinge };
+  });
 
   let stride = 0;
   return {
     hamster,
+    legs,
     /**
      * Run: `speed` along the ground in tiles a second, facing `heading`
-     * (radians round +y from +z). It bobs and leans into it, as fast as the
-     * ball rolls.
+     * (radians round +y from +z). The legs go round in a trot, diagonal
+     * pairs together, as fast as the ball rolls: each swings forward with
+     * its foot lifted and pushes back flat. It bobs and leans into it.
      */
     run(dt, speed, heading) {
       if (heading != null) {
@@ -164,11 +213,19 @@ export function createHamster(GFX, { radius = RADIUS } = {}) {
         d = Math.atan2(Math.sin(d), Math.cos(d));
         hamster.rotation.y += d * Math.min(1, dt * 10);
       }
-      const going = Math.min(1, speed / 1.5);
-      stride += (speed / radius) * dt * 1.4;
-      bob.position.y = floor + Math.abs(Math.sin(stride)) * 0.014 * going;
-      bob.rotation.x = 0.1 * going + Math.sin(stride * 2) * 0.03 * going;
-      bob.rotation.z = Math.sin(stride) * 0.04 * going;
+      const going = Math.min(1, speed / 1.2);
+      // A stride as long as the ball rolls under it.
+      stride += (speed / 0.14) * dt;
+      for (const l of legs) {
+        const a = stride + l.phase;
+        const swing = Math.sin(a) * 0.8 * going;
+        const lift = Math.max(0, Math.cos(a)) * 0.018 * going;
+        l.hinge.rotation.x = -swing;
+        l.hinge.position.y = l.at[1] + lift;
+      }
+      bob.position.y = floor + Math.abs(Math.sin(stride)) * 0.01 * going;
+      bob.rotation.x = 0.1 * going + Math.sin(stride * 2) * 0.025 * going;
+      bob.rotation.z = Math.sin(stride) * 0.03 * going;
     },
   };
 }
@@ -176,9 +233,9 @@ export function createHamster(GFX, { radius = RADIUS } = {}) {
 /** The whole player: `spin` turns as it rolls, `hamster` runs inside. */
 export function createPlayer(GFX, opts = {}) {
   const { spin, shell } = createBall(GFX, opts);
-  const { hamster, run } = createHamster(GFX, opts);
+  const { hamster, run, legs } = createHamster(GFX, opts);
   const player = new GFX.Group();
   player.name = 'player';
   player.add(hamster, spin);
-  return { player, spin, shell, hamster, run };
+  return { player, spin, shell, hamster, run, legs };
 }

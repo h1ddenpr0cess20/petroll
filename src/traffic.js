@@ -1,4 +1,5 @@
-import { createKit } from './kit.js';
+import { model } from './models/library.js';
+import { materialsOf } from './sculpt/bake.js';
 
 /**
  * The traffic: cars, trucks and tankers driving round the roads of the
@@ -14,9 +15,9 @@ import { createKit } from './kit.js';
  */
 
 export const KINDS = Object.freeze({
-  car: { length: 1.9, width: 0.95, height: 0.85 },
-  truck: { length: 2.7, width: 1.1, height: 1.35 },
-  tanker: { length: 4.2, width: 1.15, height: 1.4 },
+  car: { length: 1.9, width: 0.95, height: 0.85, models: ['sedan', 'hatchback', 'pickup'] },
+  truck: { length: 2.7, width: 1.1, height: 1.4, models: ['boxtruck'] },
+  tanker: { length: 4.2, width: 1.15, height: 1.5, models: ['tanker'] },
 });
 
 const PAINT = ['#c8382c', '#2c6ec8', '#e8e2d6', '#f2c230', '#3a8a4a', '#1c1b1f', '#8a8f9a', '#e07a2a', '#6a3a8a', '#4ab0c8'];
@@ -71,50 +72,6 @@ export function along(path, s, out = { x: 0, z: 0, dx: 0, dz: 1 }) {
   return out;
 }
 
-/** The meshes for one kind of vehicle in one colour, facing +z, wheels on the ground. */
-function vehicleKit(GFX, kind, paint) {
-  const kit = createKit(GFX);
-  const { length: L, width: W, height: H } = KINDS[kind];
-  const hl = L / 2, hw = W / 2;
-  const glass = '#26303c', tyre = '#18181b', chrome = '#c8ccd2';
-  const wheel = (x, z, r = 0.19) => {
-    kit.cyl([x, r, z], r, 0.16, tyre, { rot: [0, 0, Math.PI / 2], segments: 14 });
-    kit.cyl([x + Math.sign(x) * 0.07, r, z], r * 0.55, 0.04, chrome, { rot: [0, 0, Math.PI / 2], segments: 10, finish: 'shiny' });
-  };
-  if (kind === 'car') {
-    kit.slab(-hw, 0.18, -hl, hw, 0.52, hl, paint, { finish: 'shiny' });
-    kit.slab(-hw * 0.86, 0.52, -hl * 0.55, hw * 0.86, 0.84, hl * 0.3, paint, { finish: 'shiny' });
-    kit.slab(-hw * 0.88, 0.55, -hl * 0.5, hw * 0.88, 0.8, hl * 0.26, glass, { finish: 'glass' });
-    kit.slab(-hw * 0.9, 0.3, hl - 0.02, -hw * 0.5, 0.42, hl + 0.01, '#fff6d8', { finish: 'glow' });
-    kit.slab(hw * 0.5, 0.3, hl - 0.02, hw * 0.9, 0.42, hl + 0.01, '#fff6d8', { finish: 'glow' });
-    kit.slab(-hw * 0.9, 0.34, -hl - 0.01, -hw * 0.55, 0.44, -hl + 0.02, '#ff3020', { finish: 'glow' });
-    kit.slab(hw * 0.55, 0.34, -hl - 0.01, hw * 0.9, 0.44, -hl + 0.02, '#ff3020', { finish: 'glow' });
-    kit.slab(-hw * 0.95, 0.2, hl - 0.05, hw * 0.95, 0.27, hl + 0.04, chrome, { finish: 'shiny' });
-    for (const x of [-hw + 0.06, hw - 0.06]) for (const z of [-hl * 0.6, hl * 0.62]) wheel(x, z);
-  } else {
-    // A cab at the front, and behind it a box (truck) or a tank (tanker).
-    const cab = 1.0;
-    kit.slab(-hw, 0.25, hl - cab, hw, H * 0.92, hl, paint, { finish: 'shiny' });
-    kit.slab(-hw * 0.92, H * 0.55, hl - 0.05, hw * 0.92, H * 0.86, hl + 0.01, glass, { finish: 'glass' });
-    kit.slab(-hw * 0.95, 0.3, hl - 0.01, -hw * 0.6, 0.45, hl + 0.02, '#fff6d8', { finish: 'glow' });
-    kit.slab(hw * 0.6, 0.3, hl - 0.01, hw * 0.95, 0.45, hl + 0.02, '#fff6d8', { finish: 'glow' });
-    kit.slab(-hw * 0.95, 0.18, -hl, hw * 0.95, 0.3, hl - cab, '#3a3a40');
-    if (kind === 'truck') {
-      kit.slab(-hw, 0.3, -hl, hw, H, hl - cab - 0.06, '#e8e4dc');
-      kit.slab(-hw - 0.005, 0.55, -hl * 0.9, hw + 0.005, H * 0.82, hl - cab - 0.3, paint);
-    } else {
-      kit.cyl([0, 0.3 + hw * 0.95, -cab / 2 + 0.0], hw * 0.95, L - cab - 0.15, '#d8dce2', { rot: [Math.PI / 2, 0, 0], finish: 'shiny', segments: 20 });
-      kit.slab(-hw * 0.97, 0.3 + hw * 0.7, -hl + 0.6, hw * 0.97, 0.3 + hw * 1.1, -hl + 1.4, paint);
-      kit.slab(-0.2, 0.3 + hw * 1.9, -0.6, 0.2, 0.3 + hw * 2.0, 0.2, '#8a8f9a');
-    }
-    kit.slab(-hw * 0.9, 0.36, -hl - 0.01, -hw * 0.55, 0.48, -hl + 0.02, '#ff3020', { finish: 'glow' });
-    kit.slab(hw * 0.55, 0.36, -hl - 0.01, hw * 0.9, 0.48, -hl + 0.02, '#ff3020', { finish: 'glow' });
-    const zs = kind === 'tanker' ? [hl - 0.5, -hl + 0.5, -hl + 1.0, 0] : [hl - 0.5, -hl + 0.5, -hl + 0.95];
-    for (const x of [-hw + 0.05, hw - 0.05]) for (const z of zs) wheel(x, z, 0.22);
-  }
-  return kit;
-}
-
 export function createTraffic(GFX, map, world) {
   const group = new GFX.Group();
   group.name = 'traffic';
@@ -126,17 +83,15 @@ export function createTraffic(GFX, map, world) {
     for (let i = 0; i < road.cars; i++) {
       const kind = road.kind === 'truck' && i % 2 && !road.open ? 'tanker' : road.kind;
       const paint = PAINT[(ri * 3 + i * 7) % PAINT.length];
-      const key = `${kind}${paint}`;
-      if (!looks.has(key)) looks.set(key, vehicleKit(GFX, kind, paint).geometries());
-      const mesh = new GFX.Group();
-      for (const [finish, g] of Object.entries(looks.get(key))) {
-        const m = new GFX.Mesh(g, materialFor(GFX, finish));
-        m.castShadow = finish !== 'glow' && finish !== 'glass';
-        m.receiveShadow = finish !== 'glow';
-        mesh.add(m);
-      }
+      const which = KINDS[kind].models[(ri + i) % KINDS[kind].models.length];
+      const { geometry, def } = model(GFX, which);
+      const key = `${which}${paint}`;
+      if (!looks.has(key)) looks.set(key, materialsOf(GFX, def, { paint: { color: paint } }));
+      const mesh = new GFX.Mesh(geometry, looks.get(key));
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
       group.add(mesh);
-      const size = KINDS[kind];
+      const size = which === 'pickup' ? { ...KINDS.car, length: 2.1 } : which === 'hatchback' ? { ...KINDS.car, length: 1.7 } : KINDS[kind];
       const box = { solid: true, kind: 'car', vx: 0, vy: 0, vz: 0, min: [0, 0, 0], max: [0, 0, 0] };
       cars.push({
         id: id++, road, path, kind, size, mesh, box,
@@ -230,13 +185,3 @@ export function createTraffic(GFX, map, world) {
   };
 }
 
-let mats = null;
-function materialFor(GFX, finish) {
-  mats ??= {
-    matte: new GFX.MeshStandardMaterial({ name: 'car-matte', vertexColors: true, roughness: 0.8 }),
-    shiny: new GFX.MeshPhysicalMaterial({ name: 'car-paint', vertexColors: true, roughness: 0.22, metalness: 0.3, clearcoat: 1, clearcoatRoughness: 0.05 }),
-    glow: new GFX.MeshBasicMaterial({ name: 'car-lights', vertexColors: true }),
-    glass: new GFX.MeshPhysicalMaterial({ name: 'car-glass', vertexColors: true, roughness: 0.05, metalness: 0.6, clearcoat: 1 }),
-  };
-  return mats[finish];
-}

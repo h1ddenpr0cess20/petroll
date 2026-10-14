@@ -1,4 +1,5 @@
 import { createKit } from './kit.js';
+import { model } from './models/library.js';
 import { collideBalls, createBall, placeBall, PUSH, rollSpin, stepBall, turn } from './physics.js';
 
 /**
@@ -47,59 +48,53 @@ export function createHazards(GFX, map, world, { killY }) {
   const group = new GFX.Group();
   group.name = 'hazards';
 
-  // Pumpjacks: the frame drawn once, the beam and the head moving.
-  const frame = createKit(GFX);
-  const steel = '#3a3d44', red = '#c8382c', yellow = '#f2c230';
+  // Pumpjacks: the frame standing on its pad, the walking beam nodding on its bearing; the box is where the carrier bar comes down.
+  const yellow = '#f2c230';
+  const frameModel = model(GFX, 'pumpframe'), beamModel = model(GFX, 'pumpbeam');
   const pumpjacks = map.pumpjacks.map((p) => {
     const base = map.heightAt(p.x + 0.5, p.z + 0.5) ?? 0;
     const pivot = [p.x - 1.8, base + 2.3, p.z + 0.5];
-    // The Samson post, the motor and crank at the back, the wellhead under the head.
-    frame.beam([pivot[0] - 0.5, base, pivot[2] - 0.45], pivot, 0.07, steel).beam([pivot[0] - 0.5, base, pivot[2] + 0.45], pivot, 0.07, steel);
-    frame.beam([pivot[0] + 0.5, base, pivot[2] - 0.45], pivot, 0.07, steel).beam([pivot[0] + 0.5, base, pivot[2] + 0.45], pivot, 0.07, steel);
-    frame.slab(p.x - 4.4, base, p.z + 0.1, p.x - 2.6, base + 1.1, p.z + 0.9, '#5a6068');
-    frame.cyl([p.x - 3.2, base + 1.25, p.z + 0.5], 0.3, 0.2, red, { rot: [Math.PI / 2, 0, 0] });
-    frame.slab(p.x - 5, base - 0.05, p.z - 0.6, p.x + 1.2, base + 0.05, p.z + 1.6, '#7a7f86');
-    frame.cyl([p.x + 0.5, base + 0.15, p.z + 0.5], 0.12, 0.3, '#5a6068');
-    const beam = new GFX.Group();
+    const frame = new GFX.Mesh(frameModel.geometry, frameModel.materials);
+    frame.position.set(p.x, base, p.z);
+    frame.castShadow = frame.receiveShadow = true;
+    const beam = new GFX.Mesh(beamModel.geometry, beamModel.materials);
     beam.position.set(...pivot);
-    const kit = createKit(GFX);
-    kit.slab(-1.9, -0.12, -0.1, 2.0, 0.12, 0.1, yellow, { finish: 'shiny' });
-    kit.slab(-2.4, -0.5, -0.2, -1.8, 0.1, 0.2, steel);
-    beam.add(kit.build({ name: 'beam' }));
-    const head = createKit(GFX);
-    head.slab(-HEAD.w / 2, -HEAD.h / 2, -HEAD.d / 2, HEAD.w / 2, HEAD.h / 2, HEAD.d / 2, yellow, { finish: 'shiny' });
-    head.slab(-HEAD.w / 2 - 0.01, -HEAD.h / 2, -0.1, HEAD.w / 2 + 0.01, -HEAD.h / 2 + 0.12, 0.1, '#1d1d22');
-    const headMesh = head.build({ name: 'horsehead' });
-    group.add(beam, headMesh);
+    beam.castShadow = true;
+    group.add(frame, beam);
     const box = {
       solid: true, kind: 'pumpjack', vx: 0, vy: 0, vz: 0,
       min: [p.x + 0.5 - HEAD.w / 2, base, p.z + 0.5 - HEAD.d / 2], max: [p.x + 0.5 + HEAD.w / 2, base + HEAD.h, p.z + 0.5 + HEAD.d / 2],
     };
-    return { ...p, base, pivot, beam, head: headMesh, box };
+    return { ...p, base, pivot, beam, box };
   });
-  if (!frame.empty) group.add(frame.build({ name: 'pumpjack-frames' }));
 
-  // Flares: a grate in the floor, and the flame that comes up out of it.
-  const grates = createKit(GFX);
-  const flameMaterial = new GFX.MeshBasicMaterial({ name: 'flame', color: new GFX.Color('#ffb040'), transparent: true, opacity: 0.85, depthWrite: false, blending: GFX.AdditiveBlending });
-  const coreMaterial = new GFX.MeshBasicMaterial({ name: 'flame-core', color: new GFX.Color('#fff2b0'), transparent: true, opacity: 0.9, depthWrite: false, blending: GFX.AdditiveBlending });
-  const flameGeometry = new GFX.ConeGeometry(0.42, 1, 14, 1, true);
-  flameGeometry.translate(0, 0.5, 0);
+  // Flares: a vent in the floor, and the flame that comes up out of it — soft tongues of flame, camera-facing, round a white-hot heart, and a glow on the ground.
+  const ventModel = model(GFX, 'vent');
+  const flameMap = flameTexture(GFX);
+  const tongue = (color, opacity) => new GFX.SpriteMaterial({ map: flameMap, color: new GFX.Color(color), transparent: true, opacity, depthWrite: false, blending: GFX.AdditiveBlending });
+  const tongueMaterials = [tongue('#ff7a1a', 0.75), tongue('#ff9a30', 0.7), tongue('#ffb040', 0.65)];
+  const heartMaterial = tongue('#fff2c0', 0.95);
   const flares = map.flares.map((f) => {
     const y = map.heightAt(f.x + 0.5, f.z + 0.5) ?? 0;
-    grates.cyl([f.x + 0.5, y + 0.01, f.z + 0.5], 0.4, 0.03, '#2a2a30');
-    grates.torus([f.x + 0.5, y + 0.03, f.z + 0.5], 0.4, 0.04, '#c8a040', { rot: [Math.PI / 2, 0, 0], finish: 'shiny' });
-    for (const k of [-0.2, 0, 0.2]) grates.slab(f.x + 0.12, y + 0.02, f.z + 0.5 + k - 0.025, f.x + 0.88, y + 0.04, f.z + 0.5 + k + 0.025, '#5a5a60');
-    const flame = new GFX.Mesh(flameGeometry, flameMaterial);
-    const core = new GFX.Mesh(flameGeometry, coreMaterial);
-    core.scale.set(0.5, 0.6, 0.5);
-    flame.add(core);
-    flame.position.set(f.x + 0.5, y, f.z + 0.5);
+    const vent = new GFX.Mesh(ventModel.geometry, ventModel.materials);
+    vent.position.set(f.x + 0.5, y, f.z + 0.5);
+    vent.receiveShadow = true;
+    group.add(vent);
+    const flame = new GFX.Group();
+    const sprite = (material, x, z) => {
+      const s = new GFX.Sprite(material);
+      s.center.set(0.5, 0.04);
+      s.position.set(x, 0, z);
+      flame.add(s);
+      return s;
+    };
+    const licks = tongueMaterials.map((m, i) => sprite(m, Math.cos(i * 2.1) * 0.1, Math.sin(i * 2.1) * 0.1));
+    const core = sprite(heartMaterial, 0, 0);
+    flame.position.set(f.x + 0.5, y + 0.05, f.z + 0.5);
     flame.visible = false;
     group.add(flame);
-    return { ...f, y, flame, heat: 0 };
+    return { ...f, y, flame, licks, core, heat: 0 };
   });
-  if (!grates.empty) group.add(grates.build({ name: 'grates', castShadow: false }));
 
   // Lifts.
   const lifts = map.lifts.map((l) => {
@@ -115,24 +110,15 @@ export function createHazards(GFX, map, world, { killY }) {
     return { ...l, box, mesh };
   });
 
-  // Oil drums.
-  const drumKit = createKit(GFX);
-  const drumR = DRUM_RADIUS * 0.92;
-  drumKit.cyl([0, 0, 0], drumR, DRUM_RADIUS * 2.6, '#2a5aa8', { segments: 20, finish: 'shiny' });
-  for (const y of [-0.42, 0, 0.42]) drumKit.torus([0, y, 0], drumR, 0.025, '#1e4280', { rot: [Math.PI / 2, 0, 0] });
-  drumKit.cyl([0, 0, 0], drumR * 1.01, 0.12, '#e8e2d6', { segments: 20 });
-  const drumLook = drumKit.geometries();
+  // Oil drums: the sculpted drum, on its side, its middle on the ball's, to roll.
+  const drumModel = model(GFX, 'drum');
   const drums = map.drums.map((d) => {
     const y = (map.heightAt(d.x, d.z) ?? 0) + DRUM_RADIUS;
     const mesh = new GFX.Group();
-    const inner = new GFX.Group();
-    for (const [finish, g] of Object.entries(drumLook)) {
-      const m = new GFX.Mesh(g, finishMaterial(GFX, finish));
-      m.castShadow = true;
-      inner.add(m);
-    }
-    // Lying on its side: its axis across the way it rolls.
-    inner.rotation.z = Math.PI / 2;
+    const inner = new GFX.Mesh(drumModel.geometry, drumModel.materials);
+    inner.castShadow = true;
+    inner.rotation.z = -Math.PI / 2;
+    inner.position.set(-0.44, 0, 0);
     mesh.add(inner);
     group.add(mesh);
     return {
@@ -215,18 +201,21 @@ export function createHazards(GFX, map, world, { killY }) {
     /** Meshes to match, once a frame. */
     sync(dt, time) {
       for (const p of pumpjacks) {
-        const b = p.box;
-        const cx = (b.min[0] + b.max[0]) / 2, cy = (b.min[1] + b.max[1]) / 2;
-        p.head.position.set(cx, cy, (b.min[2] + b.max[2]) / 2);
-        // The beam reaches from its pivot to the top of the head.
-        p.beam.rotation.z = Math.atan2(b.max[1] - p.pivot[1], cx - p.pivot[0]);
-        p.head.rotation.z = p.beam.rotation.z * 0.6;
+        // The beam turned so the carrier bar at the foot of the bridle (2.33 along, 1.12 down from the bearing) is where the box's top is.
+        const want = p.box.max[1] - p.pivot[1];
+        let a = 0;
+        for (let i = 0; i < 4; i++) a = Math.asin(Math.max(-1, Math.min(1, (want + 1.12 * Math.cos(a)) / 2.33)));
+        p.beam.rotation.z = a;
       }
       for (const l of lifts) l.mesh.position.set((l.box.min[0] + l.box.max[0]) / 2, (l.box.min[1] + l.box.max[1]) / 2, (l.box.min[2] + l.box.max[2]) / 2);
       for (const [i, f] of flares.entries()) {
         f.flame.visible = f.heat > 0.02;
-        const flick = 1 + Math.sin(time * 37 + i) * 0.08 + Math.sin(time * 23 + i * 2) * 0.06;
-        f.flame.scale.set(0.6 + 0.4 * f.heat, 1.8 * f.heat * flick, 0.6 + 0.4 * f.heat);
+        if (!f.flame.visible) continue;
+        f.licks.forEach((lick, k) => {
+          const flick = 1 + Math.sin(time * (23 + k * 7) + i * 1.3 + k) * 0.1 + Math.sin(time * 13 + k * 3 + i) * 0.08;
+          lick.scale.set((0.75 + 0.25 * f.heat) * (1 + Math.sin(time * 17 + k) * 0.08), 2.3 * f.heat * flick, 1);
+        });
+        f.core.scale.set(0.4, 1.1 * f.heat * (1 + Math.sin(time * 29 + i) * 0.06), 1);
       }
       for (const d of drums) {
         const b = d.ball;
@@ -240,13 +229,31 @@ export function createHazards(GFX, map, world, { killY }) {
   };
 }
 
-let mats = null;
-function finishMaterial(GFX, finish) {
-  mats ??= {
-    matte: new GFX.MeshStandardMaterial({ name: 'drum-matte', vertexColors: true, roughness: 0.6 }),
-    shiny: new GFX.MeshPhysicalMaterial({ name: 'drum-paint', vertexColors: true, roughness: 0.35, metalness: 0.4, clearcoat: 0.6 }),
-    glow: new GFX.MeshBasicMaterial({ name: 'drum-glow', vertexColors: true }),
-    glass: new GFX.MeshBasicMaterial({ name: 'drum-glass', vertexColors: true }),
-  };
-  return mats[finish];
+/** A tongue of flame, soft at its edges and its tip, white where it is hottest, for the flares. */
+function flameTexture(GFX) {
+  if (typeof document === 'undefined') return null;
+  const w = 64, h = 128;
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  const g = c.getContext('2d');
+  const img = g.createImageData(w, h);
+  for (let y = 0; y < h; y++) {
+    const v = 1 - y / (h - 1); // 0 at the foot, 1 at the tip
+    const half = 0.5 * Math.sin(Math.PI * Math.min(1, 0.18 + v * 0.95)) * (1 - v * 0.55);
+    for (let x = 0; x < w; x++) {
+      const u = Math.abs(x / (w - 1) - 0.5) / Math.max(half, 1e-3);
+      const edge = Math.max(0, 1 - u * u);
+      const a = edge ** 1.4 * Math.min(1, v * 9) * (1 - v) ** 0.7;
+      const hot = edge ** 3 * (1 - v) ** 1.5;
+      const i = (y * w + x) * 4;
+      img.data[i] = 255;
+      img.data[i + 1] = 255 * (0.55 + 0.45 * hot);
+      img.data[i + 2] = 255 * (0.25 + 0.75 * hot * hot);
+      img.data[i + 3] = 255 * Math.min(1, a * 1.3);
+    }
+  }
+  g.putImageData(img, 0, 0);
+  const t = new GFX.CanvasTexture(c);
+  t.colorSpace = GFX.SRGBColorSpace;
+  return t;
 }

@@ -1,7 +1,9 @@
 import { createKit } from './kit.js';
 import { linearRGB } from './map.js';
-import { drawProps } from './props.js';
-import { surfaceMaterial } from './textures.js';
+import { createBuildings } from './buildings.js';
+import { createPlaced } from './placed.js';
+import { drawStructures } from './structures.js';
+import { surfaceMaterial, wallMaterial } from './textures.js';
 
 /**
  * The world as it is drawn: the tiles (one mesh per surface, each with its
@@ -32,15 +34,20 @@ export function createWorldMeshes(GFX, map, built) {
     mesh.name = `ground-${surface}`;
     group.add(mesh);
   }
-  const walls = new GFX.Mesh(geometry(built.walls), new GFX.MeshStandardMaterial({ name: 'walls', vertexColors: true, roughness: 0.85 }));
-  walls.receiveShadow = walls.castShadow = true;
-  group.add(walls);
+  for (const [name, parts] of built.walls) {
+    const mesh = new GFX.Mesh(geometry(parts), wallMaterial(GFX, name));
+    mesh.receiveShadow = true;
+    mesh.castShadow = true;
+    mesh.name = `walls-${name}`;
+    group.add(mesh);
+  }
 
   // Road paint: flat quads just above the ground.
   const paint = { position: [], normal: [], color: [] };
   for (const m of map.marks) {
     const y = (map.heightAt(m.x + m.w / 2, m.z + m.d / 2) ?? 0) + 0.012;
-    const c = linearRGB(m.colour).map((v) => v * 0.85);
+    const l = built.light(m.x + m.w / 2, y, m.z + m.d / 2);
+    const c = linearRGB(m.colour).map((v, i) => v * 0.8 * l[i]);
     const quad = [[m.x, m.z], [m.x, m.z + m.d], [m.x + m.w, m.z], [m.x + m.w, m.z], [m.x, m.z + m.d], [m.x + m.w, m.z + m.d]];
     for (const [x, z] of quad) {
       paint.position.push(x, y, z);
@@ -64,12 +71,14 @@ export function createWorldMeshes(GFX, map, built) {
     k.slab(d.x, d.h - d.thick - 0.12, d.z + 0.1, d.x + d.w, d.h - d.thick, d.z + d.d - 0.1, '#5a6068');
     if (d.roof) { k.bounds = { x0: d.x, z0: d.z, x1: d.x + d.w, z1: d.z + d.d, y: d.h - d.thick }; roofKits.push(k); }
   }
-  const { extras, roofs } = drawProps(GFX, kit, map, createKit);
-  roofKits.push(...roofs);
+  const structures = drawStructures(GFX, map, built.light);
+  roofKits.push(...structures.roofs);
+  group.add(structures.group);
   country(kit, map);
-  group.add(kit.build({ name: 'props' }));
-  for (const e of extras) group.add(e);
+  group.add(kit.build({ name: 'decks-and-country' }));
   group.add(land(GFX, map));
+  group.add(createPlaced(GFX, map, built.light));
+  group.add(createBuildings(GFX, map));
 
   const occluders = roofKits.map((k) => {
     const mesh = new GFX.Group();
@@ -102,7 +111,8 @@ export function createWorldMeshes(GFX, map, built) {
 function land(GFX, map) {
   const cx = map.cols / 2, cz = map.rows / 2;
   const rings = [0, 70, 100, 140, 200, 280, 380];
-  const colours = ['#8a8a50', '#8a8a50', '#94885a', '#a08c66', '#b89478', '#c89a82', '#cf9c88'].map(linearRGB);
+  // Scrub in the dark, going to the glow of the refineries at the horizon.
+  const colours = ['#2a2c1c', '#2a2c1c', '#262619', '#231f17', '#211a15', '#1e1613', '#1a1210'].map(linearRGB);
   const seg = 72;
   const position = [], normal = [], color = [];
   const pt = (ri, a) => [cx + Math.cos(a) * rings[ri], -0.03, cz + Math.sin(a) * rings[ri]];

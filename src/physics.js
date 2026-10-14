@@ -130,6 +130,23 @@ export class World {
     return box;
   }
 
+  /** An upright cylinder that never moves (a tank, a post, a trunk): bucketed like the still boxes. */
+  addCylinder(cy) {
+    cy.cylinder = true;
+    cy.solid = true;
+    cy.vx = cy.vy = cy.vz = 0;
+    const x0 = Math.max(0, Math.floor(cy.x - cy.r)), x1 = Math.min(this.cols - 1, Math.floor(cy.x + cy.r));
+    const z0 = Math.max(0, Math.floor(cy.z - cy.r)), z1 = Math.min(this.rows - 1, Math.floor(cy.z + cy.r));
+    for (let z = z0; z <= z1; z++) {
+      for (let x = x0; x <= x1; x++) {
+        const k = z * this.cols + x;
+        if (!this._statics.has(k)) this._statics.set(k, []);
+        this._statics.get(k).push(cy);
+      }
+    }
+    return cy;
+  }
+
   /** The boxes a sphere at (x, z) might touch: every moving one, and the still ones near it. */
   boxesNear(x, z, r, out) {
     out.length = 0;
@@ -327,6 +344,27 @@ export function stepBall(ball, world, ax, az, dt, { push = PUSH, airPush = AIR_P
     }
     for (const box of world.boxesNear(ball.x, ball.z, r, _boxes)) {
       if (!box.solid) continue;
+      if (box.cylinder) {
+        // The nearest point on an upright cylinder: on its side, its top or its rim.
+        const dx0 = ball.x - box.x, dz0 = ball.z - box.z, h = Math.hypot(dx0, dz0);
+        const inR = h <= box.r;
+        const qx = inR ? ball.x : box.x + (dx0 / h) * box.r, qz = inR ? ball.z : box.z + (dz0 / h) * box.r;
+        const qy = Math.max(box.y0, Math.min(ball.y, box.y1));
+        const dx = ball.x - qx, dy = ball.y - qy, dz = ball.z - qz;
+        const d2 = dx * dx + dy * dy + dz * dz;
+        if (d2 >= r2 && !(inR && ball.y > box.y0 && ball.y < box.y1)) continue;
+        if (d2 > 1e-12 && !(inR && ball.y > box.y0 && ball.y < box.y1)) {
+          const d = Math.sqrt(d2);
+          contact(dx / d, dy / d, dz / d, r - d, box);
+        } else {
+          // The centre is inside: out by the side or the top, whichever is nearer.
+          const side = box.r - h, up = box.y1 - ball.y;
+          if (up < side) contact(0, 1, 0, up + r, box);
+          else contact(h > 1e-9 ? dx0 / h : 1, 0, h > 1e-9 ? dz0 / h : 0, side + r, box);
+        }
+        touched = true;
+        continue;
+      }
       const qx = Math.max(box.min[0], Math.min(ball.x, box.max[0]));
       const qy = Math.max(box.min[1], Math.min(ball.y, box.max[1]));
       const qz = Math.max(box.min[2], Math.min(ball.z, box.max[2]));
