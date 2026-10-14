@@ -962,6 +962,21 @@ function tarpaper(GFX) {
   return pair(GFX, 256, paint(false), paint(true));
 }
 
+/** Spilt oil: black-brown and glassy, with the rainbow sheen of the film on it in swirls. */
+function oilslick(GFX) {
+  const n = fractal(661, 3, 4), m = fractal(663, 5, 3);
+  const paint = (relief) => (size) => pixels(size, (u, v) => {
+    const f = n(u, v) * 3 + m(u, v);
+    if (relief) return grey(Math.round(128 + (m(u, v) - 0.5) * 30));
+    const band = Math.max(0, 1 - Math.abs(((f * 4) % 1) - 0.5) * 3) * Math.max(0, m(u, v) - 0.35) * 2.2;
+    const h = f * 9;
+    const rainbow = [0, 2.1, 4.2].map((o) => 0.5 + 0.5 * Math.cos(h + o));
+    const base = [46, 38, 36];
+    return base.map((b, i) => Math.round(b + band * 150 * rainbow[i]));
+  });
+  return pair(GFX, 256, paint(false), paint(true));
+}
+
 /** Little square pool tiles with white grout, and a band of darker tile at the top. */
 function pooltile(GFX) {
   const n = fractal(641, 8, 2);
@@ -986,7 +1001,7 @@ function kerb(GFX) {
   return pair(GFX, 256, paint(false), paint(true));
 }
 
-Object.assign(FLOORS, { lawn, slabs, shingles, tarpaper, pooltile });
+Object.assign(FLOORS, { lawn, slabs, shingles, tarpaper, pooltile, oilslick });
 Object.assign(WALLS, { kerb, pooltile });
 
 

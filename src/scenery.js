@@ -2,7 +2,7 @@ import { createKit } from './kit.js';
 import { linearRGB } from './map.js';
 import { createBuildings } from './buildings.js';
 import { createPlaced } from './placed.js';
-import { drawStructures } from './structures.js';
+import { drawStructures, seams } from './structures.js';
 import { surfaceMaterial, wallMaterial } from './textures.js';
 
 /**
@@ -69,6 +69,8 @@ export function createWorldMeshes(GFX, map, built) {
     const k = d.roof ? createKit(GFX) : kit;
     k.slab(d.x, d.h - d.thick, d.z, d.x + d.w, d.h, d.z + d.d, d.colour);
     k.slab(d.x, d.h - d.thick - 0.12, d.z + 0.1, d.x + d.w, d.h - d.thick, d.z + d.d - 0.1, '#5a6068');
+    // A roof: standing seams across it, and flashing round its edge.
+    if (d.roof) seams(k, d.x, d.z, d.x + d.w, d.z + d.d, d.h, d.colour);
     if (d.roof) { k.bounds = { x0: d.x, z0: d.z, x1: d.x + d.w, z1: d.z + d.d, y: d.h - d.thick }; roofKits.push(k); }
   }
   const structures = drawStructures(GFX, map, built.light);
@@ -113,9 +115,14 @@ function land(GFX, map) {
   const rings = [0, 70, 100, 140, 200, 280, 380];
   // Scrub in the dark, going to the glow of the refineries at the horizon.
   const colours = ['#2a2c1c', '#2a2c1c', '#262619', '#231f17', '#211a15', '#1e1613', '#1a1210'].map(linearRGB);
-  const seg = 72;
+  const seg = 144;
   const position = [], normal = [], color = [];
-  const pt = (ri, a) => [cx + Math.cos(a) * rings[ri], -0.03, cz + Math.sin(a) * rings[ri]];
+  // The innermost ring is the map's own edge: the land doesn't run under the town, where it would show through anything sunk below it.
+  const edge = (a) => Math.min(cx / Math.max(1e-6, Math.abs(Math.cos(a))), cz / Math.max(1e-6, Math.abs(Math.sin(a)))) - 0.5;
+  const pt = (ri, a) => {
+    const r = ri === 0 ? edge(a) : Math.max(rings[ri], edge(a) + 2);
+    return [cx + Math.cos(a) * r, -0.03, cz + Math.sin(a) * r];
+  };
   for (let ri = 0; ri < rings.length - 1; ri++) {
     for (let i = 0; i < seg; i++) {
       const a0 = (i / seg) * Math.PI * 2, a1 = ((i + 1) / seg) * Math.PI * 2;

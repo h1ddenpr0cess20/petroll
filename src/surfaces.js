@@ -28,7 +28,7 @@ export const SURFACES = Object.freeze({
   grate: { tex: 'grate', top: '#9aa0a8', wtex: 'hull', wall: '#6a7078', drag: 0.45, grip: 1, map: '#6a7078' },
   roof: { tex: 'shingles', top: '#9a6a56', wtex: 'clapboard', wall: '#e6dccb', drag: 0.6, grip: 1, map: '#5e3e34' },
   flatroof: { tex: 'tarpaper', top: '#7a7a80', wtex: 'brick', wall: '#9aa0aa', drag: 0.55, grip: 1, map: '#6a6a70' },
-  oil: { tex: 'asphalt', top: '#18181e', wtex: 'block', wall: '#2a2a30', drag: 0.05, grip: 0.22, shine: 'oil', map: '#101014' },
+  oil: { tex: 'oilslick', top: '#ffffff', wtex: 'block', wall: '#2a2a30', drag: 0.05, grip: 0.22, shine: 'oil', map: '#101014' },
   wet: { tex: 'concrete', top: '#6a7a86', wtex: 'block', wall: '#55575c', drag: 0.2, grip: 0.55, shine: 'wet', map: '#4a5862' },
   tar: { tex: 'asphalt', top: '#0e0e10', wtex: 'cliff', wall: '#1a1a1e', drag: 6, grip: 0.1, sinks: true, shine: 'tar', map: '#060608' },
   pool: { tex: 'pooltile', top: '#8ccbe2', wtex: 'pooltile', wall: '#cfe8f0', drag: 0.45, grip: 1, map: '#7cc0dc' },

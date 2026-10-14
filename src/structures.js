@@ -231,6 +231,7 @@ const DRAW = {
     const { x, z, w, d, h } = p;
     // The roof: a deep white fascia with a red band, lit panels underneath.
     roof.slab(x, h, z, x + w, h + 0.55, z + d, '#eceae4');
+    seams(roof, x, z, x + w, z + d, h + 0.55, '#d8d6d0');
     for (const [a, b, c2, d2] of [[x - 0.02, z - 0.02, x + w + 0.02, z + 0.04], [x - 0.02, z + d - 0.04, x + w + 0.02, z + d + 0.02], [x - 0.02, z, x + 0.04, z + d], [x + w - 0.04, z, x + w + 0.02, z + d]]) {
       roof.slab(a, h + 0.14, b, c2, h + 0.4, d2, RED);
     }
@@ -530,3 +531,15 @@ export function structureLights(map) {
 }
 
 export const STRUCTURES = Object.keys(DRAW);
+
+/** A metal roof's top from (x0, z0) to (x1, z1) at `y`: standing seams every half tile, a darker flashing round the edge. */
+export function seams(k, x0, z0, x1, z1, y, colour) {
+  const dark = shadeHex(colour, 0.78), light = shadeHex(colour, 1.06);
+  for (let x = x0 + 0.45; x < x1 - 0.2; x += 0.45) k.slab(x - 0.025, y, z0 + 0.08, x + 0.025, y + 0.05, z1 - 0.08, light);
+  k.slab(x0 - 0.03, y, z0 - 0.03, x1 + 0.03, y + 0.08, z0 + 0.08, dark);
+  k.slab(x0 - 0.03, y, z1 - 0.08, x1 + 0.03, y + 0.08, z1 + 0.03, dark);
+  k.slab(x0 - 0.03, y, z0, x0 + 0.08, y + 0.08, z1, dark);
+  k.slab(x1 - 0.08, y, z0, x1 + 0.03, y + 0.08, z1, dark);
+}
+
+const shadeHex = (hex, k) => '#' + [1, 3, 5].map((i) => Math.round(Math.min(255, parseInt(hex.slice(i, i + 2), 16) * k)).toString(16).padStart(2, '0')).join('');
