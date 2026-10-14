@@ -396,11 +396,19 @@ const DRAW = {
   },
 
   sphere(k, t, p, y) {
-    k.sphere([p.x, y + p.r + 1.2, p.z], p.r, '#e8e4dc', { finish: 'shiny' });
-    k.torus([p.x, y + p.r + 1.2, p.z], p.r * 1.003, 0.05, '#b8bec6', { rot: [Math.PI / 2, 0, 0] });
+    k.sphere([p.x, y + p.r + 1.2, p.z], p.r, '#e8e4dc', { finish: 'shiny', segments: 56 });
+    k.torus([p.x, y + p.r + 1.2, p.z], p.r * 1.003, 0.05, '#b8bec6', { rot: [Math.PI / 2, 0, 0], segments: 64 });
+    // Its legs: columns up to the equator, meeting the sphere where it's widest, as a real one stands; braced in crosses between.
+    const cy = y + p.r + 1.2, R = p.r * 0.985;
     for (let i = 0; i < 8; i++) {
-      const a = (i / 8) * TAU;
-      k.cyl([p.x + Math.cos(a) * p.r * 0.82, y + 1.0, p.z + Math.sin(a) * p.r * 0.82], 0.14, 2.0, STEEL, { segments: 8 });
+      const a = (i / 8) * TAU, b = ((i + 1) / 8) * TAU;
+      const [x0, z0] = [p.x + Math.cos(a) * R, p.z + Math.sin(a) * R];
+      const [x1, z1] = [p.x + Math.cos(b) * R, p.z + Math.sin(b) * R];
+      k.cyl([x0, (y + cy) / 2, z0], 0.14, cy - y, STEEL, { segments: 10 });
+      k.cyl([x0, y + 0.15, z0], 0.26, 0.3, '#8a867e', { segments: 10 });
+      k.slab(x0 - 0.17, cy - 0.25, z0 - 0.17, x0 + 0.17, cy + 0.05, z0 + 0.17, STEEL);
+      k.beam([x0, y + 0.4, z0], [x1, cy - 1.0, z1], 0.035, '#5a6068');
+      k.beam([x1, y + 0.4, z1], [x0, cy - 1.0, z0], 0.035, '#5a6068');
     }
     k.beam([p.x + p.r * 0.9, y, p.z], [p.x + 0.3, y + p.r * 2 + 1.2, p.z], 0.04, '#5a6068');
   },

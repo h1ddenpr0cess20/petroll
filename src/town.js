@@ -421,8 +421,9 @@ function interstate(c) {
   // Tunnels where it goes through the bank at each end, and nothing gets past them.
   c.prop('tunnel', 111, 0, { w: 11, d: 4, facing: 1 });
   c.prop('tunnel', 111, SIZE - 4, { w: 11, d: 4, facing: -1 });
-  c.solid(111, 0, 3.6, 122, 3, 3.9);
-  c.solid(111, 0, SIZE - 3.9, 122, 3, SIZE - 3.6);
+  // The tunnels solid, portal and all, so nothing gets in behind them off the banks either side.
+  c.solid(110.2, 0, 0, 122.8, 4.2, 3.9);
+  c.solid(110.2, 0, SIZE - 3.9, 122.8, 4.2, SIZE);
   c.goldenSeed('On the central reservation', 116.5, 37.7, { y: 0.5 });
   // The far side: the grass behind the billboard, all the way down to the corner.
   c.seedLine(123.5, 50, 123.5, 118, 12);
@@ -578,7 +579,9 @@ function refinery(c) {
   c.prop('piperack', 4, 98, { to: 30 });
   for (const z of [79, 98]) for (let x = 4.5; x < 30; x += 5) c.solid(x - 0.15, 0, z - 0.15, x + 0.15, 3.4, z + 0.15);
   c.prop('sphere', 30, 116, { r: 3.5 });
-  c.solid(27.2, 0, 113.2, 32.8, 6.5, 118.8);
+  // Solid: its legs, and the sphere itself above them (there's room to roll about underneath).
+  for (let i = 0; i < 8; i++) c.cylinder(30 + Math.cos(i * Math.PI / 4) * 3.45, 116 + Math.sin(i * Math.PI / 4) * 3.45, 0.18, 0, 4.7);
+  c.cylinder(30, 116, 3.5, 2.4, 8.2);
   c.drum(20, 64); c.drum(6, 98);
   c.seedLine(6, 78, 30, 78, 8).seedLine(28, 64, 28, 110, 10).seedLine(5, 100, 5, 120, 5);
 }

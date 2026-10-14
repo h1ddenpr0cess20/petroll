@@ -121,6 +121,6 @@ test('nothing solid stands in the road', () => {
     // (A wall along the road's edge, on the line between the tiles, isn't in it.)
     const inside = [[s.min[0] + 0.01, s.min[2] + 0.01], [s.max[0] - 0.01, s.max[2] - 0.01]].every(([x, z]) => road(x, z));
     if (!inside || s.min[1] >= 2) continue;
-    assert.ok(s.min[2] > 3.5 && s.min[2] < 4 || s.max[2] > town.rows - 4 && s.max[2] < town.rows - 3.5, `solid at ${cx},${cz}`);
+    assert.ok(s.max[2] <= 4 || s.min[2] >= town.rows - 4, `solid at ${cx},${cz}`);
   }
 });

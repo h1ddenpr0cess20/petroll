@@ -63,12 +63,12 @@ export function createKit(GFX) {
       add(cached(`cone${segments}`, () => new GFX.ConeGeometry(1, 1, segments)), at, [r, h, r], rot, colour, finish);
       return kit;
     },
-    sphere(at, r, colour, { finish = 'matte', scale = [1, 1, 1], rot = [0, 0, 0] } = {}) {
-      add(cached('sphere', () => new GFX.SphereGeometry(1, 16, 10)), at, [r * scale[0], r * scale[1], r * scale[2]], rot, colour, finish);
+    sphere(at, r, colour, { finish = 'matte', scale = [1, 1, 1], rot = [0, 0, 0], segments = 16 } = {}) {
+      add(cached(`sphere${segments}`, () => new GFX.SphereGeometry(1, segments, Math.max(10, Math.round(segments * 0.6)))), at, [r * scale[0], r * scale[1], r * scale[2]], rot, colour, finish);
       return kit;
     },
-    torus(at, r, tube, colour, { rot = [0, 0, 0], finish = 'matte' } = {}) {
-      add(cached(`torus${tube / r}`, () => new GFX.TorusGeometry(1, tube / r, 8, 20)), at, [r, r, r], rot, colour, finish);
+    torus(at, r, tube, colour, { rot = [0, 0, 0], finish = 'matte', segments = 20 } = {}) {
+      add(cached(`torus${tube / r}:${segments}`, () => new GFX.TorusGeometry(1, tube / r, 8, segments)), at, [r, r, r], rot, colour, finish);
       return kit;
     },
     /** A beam from point a to point b, `t` thick. */
