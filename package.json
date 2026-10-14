@@ -1,0 +1,27 @@
+{
+  "name": "petroll",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Petroll: a hamster in a plastic run-about ball, loose in an oil town. One open world \u2014 suburbs, downtown traffic, a gas station, the interstate, an oil field and a refinery \u2014 and 22 golden sunflower seeds to find.",
+  "type": "module",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite build && vite preview",
+    "test": "node --test \"test/**/*.test.js\"",
+    "lint": "eslint ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.11.0",
+    "globals": "^17.12.0",
+    "vite": "^8.3.1"
+  },
+  "dependencies": {
+    "@fontsource/anton": "^5.3.0",
+    "@fontsource/barlow-condensed": "^5.3.0"
+  }
+}
