@@ -188,15 +188,73 @@ export function createAudio() {
       tone({ freq: 110, to: 60, length: 0.3, gain: 0.35 });
     },
 
-    /** A seed: a little pluck, higher for each one in a row. */
-    seed(run = 0) {
-      tone({ freq: NOTE(79 + ([0, 2, 4, 7, 9, 12][run % 6])), length: 0.12, type: 'triangle', gain: 0.16 });
+    /** Loose change: a coin's ching, higher for each in a row. */
+    coin(run = 0) {
+      const n = 84 + [0, 2, 4, 7, 9, 12][run % 6];
+      tone({ freq: NOTE(n), length: 0.08, type: 'square', gain: 0.06 });
+      tone({ at: 0.06, freq: NOTE(n + 7), length: 0.18, type: 'triangle', gain: 0.12 });
     },
 
-    /** A golden seed. */
-    golden() {
+    /** Something knocked flying: a plastic thwack. */
+    thwack() {
+      burst({ length: 0.06, type: 'bandpass', freq: 1200, q: 1.2, gain: 0.4 });
+      tone({ freq: 380, to: 180, length: 0.1, type: 'triangle', gain: 0.18 });
+    },
+
+    /** A tick of the job: a gate passed, a thing rounded up, a hit landed. */
+    tick(n = 0) {
+      tone({ freq: NOTE(76 + (n % 5) * 2), length: 0.1, type: 'square', gain: 0.07 });
+      tone({ at: 0.05, freq: NOTE(83 + (n % 5) * 2), length: 0.16, type: 'triangle', gain: 0.12 });
+    },
+
+    /** The count in: three short beeps and a long one. */
+    beep(go = false) {
+      tone({ freq: NOTE(go ? 84 : 72), length: go ? 0.45 : 0.15, type: 'square', gain: 0.08 });
+    },
+
+    /** The clock running out: a tick each second for the last few. */
+    clockTick() {
+      tone({ freq: 1600, length: 0.03, type: 'square', gain: 0.05 });
+    },
+
+    /** A job done: the fanfare. */
+    fanfare() {
       [67, 71, 74, 79, 83, 86].forEach((n, i) => tone({ at: i * 0.07, freq: NOTE(n), length: i === 5 ? 0.7 : 0.18, type: 'square', gain: 0.1 }));
       [55, 59, 62, 67].forEach((n, i) => tone({ at: i * 0.14, freq: NOTE(n), length: 0.4, type: 'triangle', gain: 0.2 }));
+    },
+
+    /** A job failed: the sad trombone. */
+    fail() {
+      [64, 63, 62].forEach((n, i) => tone({ at: i * 0.28, freq: NOTE(n - 12), length: 0.3, type: 'sawtooth', gain: 0.07 }));
+      tone({ at: 0.84, freq: NOTE(49), to: NOTE(47), length: 0.8, type: 'sawtooth', gain: 0.08 });
+    },
+
+    /** A hop: a springy boing. */
+    hop() {
+      tone({ freq: 260, to: 520, length: 0.14, type: 'triangle', gain: 0.1 });
+    },
+
+    /** A trampoline: a bigger boing. */
+    boing() {
+      tone({ freq: 160, to: 640, length: 0.3, type: 'triangle', gain: 0.16 });
+      tone({ freq: 80, to: 160, length: 0.2, gain: 0.12 });
+    },
+
+    /** A dash: the hamster's feet going like the clappers, a whoosh. */
+    dash() {
+      burst({ length: 0.35, type: 'bandpass', freq: 900, sweep: 2600, q: 0.8, gain: 0.35 });
+      for (let i = 0; i < 5; i++) tone({ at: i * 0.04, freq: 1800 + i * 120, length: 0.03, gain: 0.04 });
+    },
+
+    /** Money changing hands at the shop. */
+    till() {
+      tone({ freq: NOTE(88), length: 0.12, type: 'square', gain: 0.06 });
+      tone({ at: 0.1, freq: NOTE(93), length: 0.4, type: 'triangle', gain: 0.14 });
+    },
+
+    /** No: a buzz. */
+    nope() {
+      tone({ freq: 140, length: 0.22, type: 'square', gain: 0.06 });
     },
 
     /** Air going into the ball. */

@@ -1,6 +1,7 @@
 import { windowLamps } from './buildings.js';
-import { structureLights } from './structures.js';
 import { TownMap } from './map.js';
+import { structureLights } from './structures.js';
+import { work } from './work.js';
 
 /**
  * The whole world, one map: Petroleum Springs. No levels — it is all there
@@ -20,23 +21,39 @@ import { TownMap } from './map.js';
  *   The Refinery  south-west: tanks, catwalks, a lift, an alley where the
  *                 gas flares up out of the floor.
  *
+ * And over the interstate, on the road bridge or the footbridge, the east
+ * side of town:
+ *
+ *   Big Rig Truck Stop  the diner, rigs parked up, a kicker ramp.
+ *   The Drive-in        rows of cars facing the big screen, the snack bar.
+ *   Crude Acres         the trailer park: trailers in rows, trampolines.
+ *   Baron's Hill        the oil baron's mansion on top of a hill.
+ *   Wildcat Speedway    a dirt oval, banked at the ends, walled round.
+ *   The Quarry          a pit cut down in steps, a haul road to the floor.
+ *
+ * Who wants what doing about the place is in `work.js`.
+ *
  * Traffic drives round the town on the right. x runs to the right of the
- * map, z down it; the map is 128 tiles each way and a ring of grassy bank
- * keeps everything on it.
+ * map, z down it; the map is 256 tiles across and 128 down, and a ring of
+ * grassy bank keeps everything on it.
  */
 
-export const SIZE = 128;
-const CURB = 0.15;
+export const COLS = 256;
+export const ROWS = 128;
+export const CURB = 0.15;
 
 /** The bank round the edge: up from nothing five tiles in to two and a half high at the very edge, a fence along the top. */
-const berm = (X, Z) => {
-  const d = Math.min(X, Z, SIZE - X, SIZE - Z);
+export const berm = (X, Z) => {
+  const d = Math.min(X, Z, COLS - X, ROWS - Z);
   return d < 5 ? (5 - d) * 0.5 : 0;
 };
 
 /** The oil field: rolling ground, fading out to level at its edges, flattened under the pads. */
 const FIELD = { x0: 42, z0: 58, x1: 108, z1: 124 };
-const smooth = (t) => (t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t));
+/** How high the pipeline's walkway is. */
+export const PIPE = 3.6;
+
+export const smooth = (t) => (t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t));
 const pads = [];
 
 function hills(X, Z) {
@@ -96,7 +113,7 @@ function settle() {
 
 export function createTown() {
   pads.length = 0;
-  const c = new TownMap({ name: 'Petroleum Springs', cols: SIZE, rows: SIZE });
+  const c = new TownMap({ name: 'Petroleum Springs', cols: COLS, rows: ROWS });
 
   // The oil field's pads, before the ground is laid, so it is laid round them.
   const P = {
@@ -116,11 +133,11 @@ export function createTown() {
   settle();
   for (const k of Object.keys(P)) P[k] = P[k].h;
 
-  c.surface(0, 0, SIZE, SIZE, ground, { surface: 'grass' });
-  for (let z = 0; z < SIZE; z++) {
-    for (let x = 0; x < SIZE; x++) {
+  c.surface(0, 0, COLS, ROWS, ground, { surface: 'grass' });
+  for (let z = 0; z < ROWS; z++) {
+    for (let x = 0; x < COLS; x++) {
       const cell = c.cell(x, z);
-      if (cell.h.some((v) => v > 0.05) && Math.min(x, z, SIZE - 1 - x, SIZE - 1 - z) < 5) cell.surface = 'berm';
+      if (cell.h.some((v) => v > 0.05) && Math.min(x, z, COLS - 1 - x, ROWS - 1 - z) < 5) cell.surface = 'berm';
     }
   }
   c.paint(FIELD.x0, FIELD.z0, FIELD.x1 - FIELD.x0, FIELD.z1 - FIELD.z0, 'dirt');
@@ -130,9 +147,9 @@ export function createTown() {
 
   // The fence along the top of the bank, all the way round.
   const F = 0.35, top = berm(0, 0) + 1.3;
-  c.prop('fence', 0, 0, { size: SIZE, inset: F });
-  c.solid(0, 0, 0, SIZE, top, F).solid(0, 0, SIZE - F, SIZE, top, SIZE);
-  c.solid(0, 0, 0, F, top, SIZE).solid(SIZE - F, 0, 0, SIZE, top, SIZE);
+  c.prop('fence', 0, 0, { w: COLS, d: ROWS, inset: F });
+  c.solid(0, 0, 0, COLS, top, F).solid(0, 0, ROWS - F, COLS, top, ROWS);
+  c.solid(0, 0, 0, F, top, ROWS).solid(COLS - F, 0, 0, COLS, top, ROWS);
 
   streets(c);
   mapleGrove(c);
@@ -141,17 +158,32 @@ export function createTown() {
   interstate(c);
   oilField(c, P);
   refinery(c);
+  overpass(c);
+  eastStreets(c);
+  truckStop(c);
+  driveIn(c);
+  crudeAcres(c);
+  baronsHill(c);
+  speedway(c);
+  quarry(c);
   traffic(c);
+  work(c, { P });
+  scrub(c);
   windowLamps(c);
   structureLights(c);
 
   c.district('Maple Grove', 3, 3, 44, 57, '#7cb257');
   c.district('Downtown', 47, 3, 49, 57, '#8a8f9a');
   c.district("Gas 'n' Go", 90, 3, 21, 77, '#e8b04a');
-  c.district('The Interstate', 111, 0, 11, SIZE, '#5a5d66');
-  c.district('The Far Side', 122, 0, 6, SIZE, '#8c9a5a');
+  c.district('The Interstate', 111, 0, 11, ROWS, '#5a5d66');
   c.district('The Oil Field', 42, 58, 69, 70, '#b07c48');
   c.district('The Refinery', 0, 58, 42, 70, '#9aa0aa');
+  c.district('Big Rig Truck Stop', 122, 0, 20, 62, '#d8603a');
+  c.district('The Drive-in', 122, 62, 20, 66, '#c85a9a');
+  c.district('Crude Acres', 142, 0, 50, 62, '#a8b060');
+  c.district("Baron's Hill", 192, 0, 64, 62, '#d8b848');
+  c.district('Wildcat Speedway', 142, 62, 50, 66, '#c87a3a');
+  c.district('The Quarry', 192, 62, 64, 66, '#a8a090');
   return c;
 }
 
@@ -229,8 +261,6 @@ function mapleGrove(c) {
   c.place('tree', 24, 18.5, { scale: 1.1 });
   c.place('tree', 11.5, 18.5, { scale: 0.95, angle: 1 });
   c.place('hydrant', 10.25, 26.4);
-  c.goldenSeed('Home sweet home', 23.5, 25.5);
-  c.seedLine(17.5, 13, 17.5, 25, 7);
 
   // The drained pool.
   block(c, 30, 10, 16, 18);
@@ -241,8 +271,6 @@ function mapleGrove(c) {
     const k = Math.max(Math.abs(u), Math.abs(v));
     return CURB - 1.3 * (1 - smooth(Math.max(0, (k - 0.35) / 0.65)));
   }, { surface: 'pool' });
-  c.goldenSeed('The deep end', 37.5, 22);
-  c.seedLine(33.5, 17, 41.5, 17, 5);
   c.prop('chair', 43.5, 20.5).prop('chair', 43.5, 23.5);
 
   // The hedge maze.
@@ -265,9 +293,6 @@ function mapleGrove(c) {
   ring(12, 34, 24, 50, 'n');
   ring(14.2, 36.2, 21.8, 47.8, 's');
   ring(16.4, 38.4, 19.6, 45.6, 'n');
-  c.goldenSeed('Middle of the maze', 18, 42);
-  c.seedLine(13.2, 36, 13.2, 49, 6);
-  c.seedLine(15.4, 49, 22.6, 49, 4);
 
   // The skate park: a quarter pipe all down one side, a funbox, a bank.
   block(c, 30, 32, 16, 20, 'concrete');
@@ -276,8 +301,6 @@ function mapleGrove(c) {
   c.slope(31, 39, 3, 5, CURB, CURB + 0.8, 'x', { surface: 'concrete' });
   c.slope(34, 44, 3, 3, CURB + 0.8, CURB, 'z', { surface: 'concrete' });
   c.slope(34, 36, 3, 3, CURB, CURB + 0.8, 'z', { surface: 'concrete' });
-  c.goldenSeed('Up the quarter pipe', 44.5, 42, { y: CURB + 1.75 * (3.5 / 4) ** 2 });
-  c.seedLine(35.5, 40, 35.5, 43, 3);
   c.prop('rail', 38, 47, { length: 5 });
 }
 
@@ -289,8 +312,6 @@ function downtown(c) {
   c.block(59, 11, 6, 16, CURB + 9.9, { wall: '#8a98aa', facade: 'office', base: CURB, lit: 0.3 });
   // A dumpster round the side of the car park, out of everybody's way.
   c.place('dumpster', 71.55, 25, { turn: 1 });
-  c.goldenSeed('Down the back alley', 58.5, 25.5);
-  c.seedLine(58.5, 14, 58.5, 24, 5);
 
   // The parking garage: round and up to the roof.
   block(c, 70, 10, 16, 18, 'concrete');
@@ -310,8 +331,6 @@ function downtown(c) {
   wall(c, 71, 10.8, 85, 11, 0, 2.6, par, 'matte', 'block');
   wall(c, 85, 11, 85.2, 27, 0, 3.6, par, 'matte', 'block');
   wall(c, 73, 27, 85, 27.2, 0, 4.6, par, 'matte', 'block');
-  c.goldenSeed('Top of the car park', 78, 19, { y: 4.1 });
-  c.seedLine(72, 23, 72, 14, 5).seedLine(75, 12, 81, 12, 4).seedLine(84, 14, 84, 23, 5).seedLine(81, 26, 75, 26, 4);
   for (const [x, z, col, m] of [[75, 15, '#c8382c', 'sedan'], [79, 21, '#2c6ec8', 'hatchback'], [76.5, 22, '#e8e2d6', 'sedan']]) {
     c.place(m, x, z, { paint: col, y: 4.1 });
   }
@@ -323,12 +342,10 @@ function downtown(c) {
     return CURB - 0.7 * (1 - smooth(Math.min(1, r)));
   }, { surface: 'pool' });
   c.prop('fountain', 58, 42);
-  c.goldenSeed('In the fountain', 56.4, 42);
   c.place('statue', 52.5, 48.5, { turn: 2 });
   for (const [x, z] of [[53, 36], [63, 36], [53, 48.5], [63, 47]]) c.place('tree', x, z, { scale: 1.05, angle: x });
   c.place('bench', 56, 35.6, { turn: 2 }).place('bench', 60, 49.4).place('bin', 58.2, 35.5, { scale: 0.7 });
   c.airPump('Downtown', 62.5, 42.5);
-  c.seedLine(52, 42, 54, 42, 2).seedLine(62, 38, 62, 46, 4);
 
   // The building site: switchbacks up the scaffolding to the top.
   block(c, 70, 32, 16, 20, 'dirt');
@@ -339,8 +356,6 @@ function downtown(c) {
   c.prop('scaffold', 71, 34, { w: 14, d: 7, h: 4.1 });
   c.prop('crane', 80, 45);
   c.solid(79.4, CURB, 44.4, 80.6, 14, 45.6);
-  c.goldenSeed('Hard hat area', 71.6, 39.8, { y: 4.1 });
-  c.seedLine(75, 35, 82, 35, 4).seedLine(82, 37, 75, 37, 4);
   for (const [x, z] of [[72, 46], [76, 49], [84, 41], [72.6, 46.4], [77, 49.3]]) c.place('cone', x, z);
   c.drum(74, 46, { range: 6 });
   c.drum(83, 48, { range: 6 });
@@ -368,7 +383,6 @@ function gasStation(c) {
   c.flat(109, 63, 2, 1, 2.4, { surface: 'concrete' });
   c.flat(102, 64, 9, 1, 0, { surface: 'forecourt' });
   wall(c, 110.9, 56, 111.1, 64, 0, 3, '#bdb8ab', 'matte', 'block');
-  c.goldenSeed("On the Gas 'n' Go", 105.5, 58.5, { y: 2.4 });
   c.airPump("Gas 'n' Go", 98.5, 55.5);
 
   // The car wash: a tunnel, wet all through.
@@ -377,7 +391,6 @@ function gasStation(c) {
   c.flat(96, 58, 6, 5, 0, { surface: 'wet' });
   c.deck(95.8, 56.8, 6.4, 7.4, 2.5, { colour: '#e8e4dc', roof: true });
   c.prop('carwash', 96, 58, { w: 6, d: 5 });
-  c.goldenSeed('Through the car wash', 99, 60.5);
 
   // The footbridge over the interstate, to the billboard on the hill.
   c.slope(101, 34, 10, 2, 0, 2.7, 'x', { surface: 'concrete' });
@@ -389,45 +402,38 @@ function gasStation(c) {
   wall(c, 111, 36, 115.8, 36.2, 2.7, 3.3, '#5a6068', 'shiny');
   wall(c, 117.4, 36, 122, 36.2, 2.7, 3.3, '#5a6068', 'shiny');
   c.flat(122, 24, 3, 22, 2.7, { surface: 'grass', wall: '#6a4a2c' });
+  // (And a bank down off its south end.)
+  c.slope(122, 46, 3, 6, 2.7, 0, 'z', { surface: 'grass', wall: '#6a4a2c' });
   c.prop('billboard', 123.6, 31, { text: 'PETROLL' });
   c.solid(123.2, 2.7, 28.6, 124.0, 6.5, 33.4);
-  c.goldenSeed('Under the billboard', 122.8, 26.5, { y: 2.7 });
-  c.seedLine(103, 35, 109, 35, 4);
-  c.seedLine(112, 35, 121, 35, 5, { y: 2.7 });
 
   // North of the forecourt: a junkyard.
-  c.flat(96, 8, 15, 24, 0, { surface: 'gravel' });
-  for (const [x, z, col, r] of [[99, 12, '#8a3a26', 0.3], [104, 11, '#4a6a8a', 1.2], [99, 18, '#6a7a3a', 2.1], [106, 19, '#8a8a8e', 0.6], [101, 26, '#a05a2a', 1.6]]) {
+  c.flat(96, 12, 15, 20, 0, { surface: 'gravel' });
+  for (const [x, z, r] of [[99, 15, 0.3], [104, 14.5, 1.2], [99, 20, 2.1], [106, 21, 0.6], [101, 26, 1.6]]) {
     c.place('junker', x, z, { angle: r * 1.3 });
     c.cylinder(x, z, 0.9, 0, 0.9);
-    void col;
   }
   for (const [x, z] of [[108, 14], [108, 25], [97, 30]]) {
     c.place('tyres', x, z, { angle: x });
   }
-  c.seedLine(97, 15, 109, 15, 6).seedLine(103, 22, 103, 30, 4);
 }
 
 function interstate(c) {
-  c.flat(111, 0, 11, SIZE, 0, { surface: 'highway' });
-  c.flat(116, 4, 1, SIZE - 8, 0.5, { surface: 'concrete' });
+  c.flat(111, 0, 11, ROWS, 0, { surface: 'highway' });
+  c.flat(116, 4, 1, ROWS - 8, 0.5, { surface: 'concrete' });
   // Crossovers in the barrier, for the police and the breakdown trucks (and hamsters).
   for (const z of [70, 100]) c.flat(116, z, 1, 3, 0, { surface: 'highway' });
-  for (let z = 0; z < SIZE; z += 3) {
+  for (let z = 0; z < ROWS; z += 3) {
     c.mark(113.94, z, 0.12, 1.6);
     c.mark(118.94, z, 0.12, 1.6);
   }
-  c.mark(111.9, 0, 0.1, SIZE, '#f2f0e8').mark(121.0, 0, 0.1, SIZE, '#f2f0e8');
+  c.mark(111.9, 0, 0.1, ROWS, '#f2f0e8').mark(121.0, 0, 0.1, ROWS, '#f2f0e8');
   // Tunnels where it goes through the bank at each end, and nothing gets past them.
   c.prop('tunnel', 111, 0, { w: 11, d: 4, facing: 1 });
-  c.prop('tunnel', 111, SIZE - 4, { w: 11, d: 4, facing: -1 });
+  c.prop('tunnel', 111, ROWS - 4, { w: 11, d: 4, facing: -1 });
   // The tunnels solid, portal and all, so nothing gets in behind them off the banks either side.
   c.solid(110.2, 0, 0, 122.8, 4.2, 3.9);
-  c.solid(110.2, 0, SIZE - 3.9, 122.8, 4.2, SIZE);
-  c.goldenSeed('On the central reservation', 116.5, 37.7, { y: 0.5 });
-  // The far side: the grass behind the billboard, all the way down to the corner.
-  c.seedLine(123.5, 50, 123.5, 118, 12);
-  c.goldenSeed('The edge of the world', 124.6, 124.6, { y: berm(124.6, 124.6) });
+  c.solid(110.2, 0, ROWS - 3.9, 122.8, 4.2, ROWS);
 }
 
 function oilField(c, P) {
@@ -452,17 +458,13 @@ function oilField(c, P) {
   jack(95, 91, P.jack5, { period: 2.8, phase: 1.5 });
   jack(81, 109, P.jack6, { period: 3.3, phase: 2.5 });
   jack(59, 109, P.jack7, { period: 3.1, phase: 0.2 });
-  c.goldenSeed('Under the nodding donkey', 63.5, 95.5, { y: P.jack3 });
 
   // The pipeline: a long, thin, high way along the top.
-  const PIPE = 3.6;
   // The ramp up starts flush with the ground under it, corner for corner.
   c.surface(58, 68, 6, 1, (X, Z) => ground(58, Z) + (PIPE - ground(58, Z)) * ((X - 58) / 6), { surface: 'metal' });
   c.flat(64, 68, 35, 1, PIPE, { surface: 'metal' });
   c.flat(99, 66, 3, 3, PIPE, { surface: 'metal' });
   c.prop('pipeline', 58, 68, { to: 102, h: PIPE });
-  c.goldenSeed('End of the line', 100.5, 67.5, { y: PIPE });
-  c.seedLine(66, 68.5, 96, 68.5, 10);
 
   // The derrick: up on the lift to the platform at the top.
   const D = P.derrick, TOP = D + 8;
@@ -475,15 +477,12 @@ function oilField(c, P) {
   c.solid(79.9, TOP, 85.9, 84.1, TOP + 0.5, 86.1);
   c.solid(79.9, TOP, 89.9, 84.1, TOP + 0.5, 90.1);
   c.solid(83.9, TOP, 85.9, 84.1, TOP + 0.5, 90.1);
-  c.goldenSeed('Top of the derrick', 82, 88, { y: TOP });
-  c.seedLine(76, 85, 76, 91, 4);
 
   // The tar pit, and the island in the middle of it.
   const T = P.tar;
   c.flat(65, 99, 10, 7, T - 0.6, { surface: 'tar' });
   c.flat(69, 101, 2, 3, T, { surface: 'dirt' });
   c.flat(65, 102, 4, 1, T, { surface: 'plank' });
-  c.goldenSeed('Tar pit island', 70, 102.5, { y: T });
   c.prop('sign', 63.6, 101, { text: 'DANGER\nTAR', y: T });
 
   // The barrel yard: stacks to weave through, and drums that roll after you.
@@ -493,32 +492,9 @@ function oilField(c, P) {
     c.solid(x - 0.7, Y, z - 0.7, x + 0.7, Y + 1.8, z + 0.7);
   }
   c.drum(91, 99); c.drum(96, 105);
-  c.goldenSeed('In the barrel yard', 97.5, 105.5, { y: Y });
-  c.seedLine(88, 102.6, 95, 102.6, 4);
 
   // Slick Hill: oil all down one side of it.
   c.paint(58, 80, 6, 3, 'oil').paint(63, 82, 3, 5, 'oil');
-  c.goldenSeed('Top of Slick Hill', 60.5, 84.5);
-
-  // Scrub, rocks and old spills over all the open ground.
-  let seed = 4242;
-  const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
-  const open = (x, z) => {
-    const cell = c.cell(Math.floor(x), Math.floor(z));
-    if (!cell || cell.surface !== 'dirt') return false;
-    if (Math.abs(x - 48) < 2 || Math.abs(x - 104) < 2 || Math.abs(z - 64) < 2 || Math.abs(z - 118) < 2) return false;
-    return !c.solids.some((s) => x > s.min[0] - 1 && x < s.max[0] + 1 && z > s.min[2] - 1 && z < s.max[2] + 1);
-  };
-  for (let i = 0; i < 420; i++) {
-    const x = FIELD.x0 + 2 + rnd() * (FIELD.x1 - FIELD.x0 - 4), z = FIELD.z0 + 2 + rnd() * (FIELD.z1 - FIELD.z0 - 4);
-    if (!open(x, z)) continue;
-    const k = rnd();
-    if (k < 0.6) c.place('shrub', x, z, { scale: 0.7 + rnd() * 0.8, angle: rnd() * 6 });
-    else c.place('rock', x, z, { scale: 0.6 + rnd() * 1.1, angle: rnd() * 6 });
-  }
-
-  // Seeds along the roads.
-  c.seedLine(48, 70, 48, 114, 12).seedLine(52, 118, 100, 118, 13).seedLine(104, 112, 104, 68, 12);
 }
 
 function refinery(c) {
@@ -543,12 +519,9 @@ function refinery(c) {
   c.flat(16, 71, 22, 1, 3, { surface: 'metal' });
   c.flat(37, 69, 3, 3, 3, { surface: 'metal' });
   c.prop('catwalk', 16, 71, { w: 24, h: 3 });
-  c.goldenSeed('End of the catwalk', 38.5, 70.5, { y: 3 });
-  c.seedLine(21, 80, 21, 73, 4).seedLine(23, 71.5, 35, 71.5, 6);
 
   // The tall tank: up on the lift.
   c.lift(17, 87, 2, 2, 0, { to: [0, 6, 0], period: 8, pause: 0.24 });
-  c.goldenSeed('Top of the big tank', 12.5, 88.5, { y: 6 });
 
   // Flare alley: the gas comes up out of the floor.
   c.block(32, 82, 1, 26, 1.4, { wall: '#8a9098', wtex: 'block', surface: 'metal' });
@@ -558,7 +531,6 @@ function refinery(c) {
     c.flare(33 + (k % 2 ? 0 : 2), 85 + k * 3.8, { period: 2.8, phase: -k * 0.35, burn: 0.3 });
     c.flare(34, 86.6 + k * 3.8, { period: 2.8, phase: -k * 0.35, burn: 0.3 });
   }
-  c.goldenSeed('End of flare alley', 35, 106.5);
   c.prop('stack', 22, 92, { h: 14 });
   c.solid(21.2, 0, 91.2, 22.8, 14, 92.8);
 
@@ -583,13 +555,14 @@ function refinery(c) {
   for (let i = 0; i < 8; i++) c.cylinder(30 + Math.cos(i * Math.PI / 4) * 3.45, 116 + Math.sin(i * Math.PI / 4) * 3.45, 0.18, 0, 4.7);
   c.cylinder(30, 116, 3.5, 2.4, 8.2);
   c.drum(20, 64); c.drum(6, 98);
-  c.seedLine(6, 78, 30, 78, 8).seedLine(28, 64, 28, 110, 10).seedLine(5, 100, 5, 120, 5);
 }
 
 /**
- * The traffic. Two rings round the whole town, one each way; two more
+ * The traffic. Two rings round the west of town, one each way; two more
  * round the middle; a car or two in and out of the gas station; trucks
- * round the oil field; and the interstate, which never stops.
+ * round the oil field; the interstate, which never stops; over the road
+ * bridge; and the same again round the east side, with a haul truck in
+ * the quarry.
  */
 function traffic(c) {
   c.road([[9, 9], [87, 9], [87, 53], [9, 53]], { cars: 6, speed: 4.2 });
@@ -599,8 +572,247 @@ function traffic(c) {
   c.road([[92, 55], [106.5, 55], [106.5, 41], [101, 41], [101, 53], [92, 53]], { cars: 2, speed: 2.4 });
   c.road([[48, 64], [48, 118], [104, 118], [104, 64]], { cars: 2, speed: 3.4, kind: 'truck' });
   // The interstate: open at both ends, into the tunnels.
-  c.road([[113, -3], [113, SIZE + 3]], { cars: 3, speed: 7.5, kind: 'truck', brakes: false, open: true });
-  c.road([[115, -3], [115, SIZE + 3]], { cars: 3, speed: 9, kind: 'car', brakes: false, open: true });
-  c.road([[118, SIZE + 3], [118, -3]], { cars: 3, speed: 9.5, kind: 'car', brakes: false, open: true });
-  c.road([[120, SIZE + 3], [120, -3]], { cars: 3, speed: 7, kind: 'tanker', brakes: false, open: true });
+  c.road([[113, -3], [113, ROWS + 3]], { cars: 3, speed: 7.5, kind: 'truck', brakes: false, open: true });
+  c.road([[115, -3], [115, ROWS + 3]], { cars: 3, speed: 9, kind: 'car', brakes: false, open: true });
+  c.road([[118, ROWS + 3], [118, -3]], { cars: 3, speed: 9.5, kind: 'car', brakes: false, open: true });
+  c.road([[120, ROWS + 3], [120, -3]], { cars: 3, speed: 7, kind: 'tanker', brakes: false, open: true });
+  // Over the road bridge and back, and round the east side of town.
+  c.road([[92, 9], [139, 9], [139, 7], [92, 7]], { cars: 2, speed: 4.4, over: true });
+  c.road([[145, 9], [243, 9], [243, 115], [145, 115]], { cars: 6, speed: 4.6 });
+  c.road([[143, 7], [143, 117], [245, 117], [245, 7]], { cars: 6, speed: 4.4 });
+  c.road([[145, 63], [191, 63], [191, 115], [145, 115]], { cars: 3, speed: 3.8 });
+  c.road([[193, 9], [243, 9], [243, 61], [193, 61]], { cars: 3, speed: 3.8 });
+  // The haul truck, down into the quarry and back up.
+  c.road([[217, 66], [217, 88], [219, 88], [219, 66]], { cars: 1, speed: 2.4, kind: 'truck' });
+}
+
+/** Scrub, rocks and old spills over all the open ground of the oil field, clear of anything to be done there. */
+function scrub(c) {
+  let seed = 4242;
+  const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  const busy = [...c.givers, ...c.knocks, ...c.jobs.flatMap((j) => j.stages.flatMap((s) => [s.at, ...(s.points ?? [])].filter(Boolean).map(([x, z]) => ({ x, z }))))];
+  const open = (x, z) => {
+    const cell = c.cell(Math.floor(x), Math.floor(z));
+    if (!cell || cell.surface !== 'dirt') return false;
+    if (Math.abs(x - 48) < 2 || Math.abs(x - 104) < 2 || Math.abs(z - 64) < 2 || Math.abs(z - 118) < 2) return false;
+    if (busy.some((b) => Math.hypot(b.x - x, b.z - z) < 1.8)) return false;
+    return !c.solids.some((s) => x > s.min[0] - 1 && x < s.max[0] + 1 && z > s.min[2] - 1 && z < s.max[2] + 1);
+  };
+  for (let i = 0; i < 420; i++) {
+    const x = FIELD.x0 + 2 + rnd() * (FIELD.x1 - FIELD.x0 - 4), z = FIELD.z0 + 2 + rnd() * (FIELD.z1 - FIELD.z0 - 4);
+    if (!open(x, z)) continue;
+    const k = rnd();
+    if (k < 0.6) c.place('shrub', x, z, { scale: 0.7 + rnd() * 0.8, angle: rnd() * 6 });
+    else c.place('rock', x, z, { scale: 0.6 + rnd() * 1.1, angle: rnd() * 6 });
+  }
+}
+
+/** A vehicle parked, square to the map (`turn` quarter turns), solid as the traffic's are. */
+const PARKED = { sedan: [0.95, 1.9, 0.85], hatchback: [0.95, 1.7, 0.85], pickup: [1.0, 2.1, 0.9], boxtruck: [1.1, 2.7, 1.4], tanker: [1.15, 4.2, 1.5] };
+function parked(c, m, x, z, { turn = 0, paint = null, y = null } = {}) {
+  const base = y ?? c.heightAt(x, z) ?? 0;
+  c.place(m, x, z, { turn, paint, y: base });
+  const [w, l, h] = PARKED[m];
+  const ex = turn % 2 ? l / 2 : w / 2, ez = turn % 2 ? w / 2 : l / 2;
+  c.solid(x - ex, base, z - ez, x + ex, base + h, z + ez);
+  return c;
+}
+
+const PAINTS = ['#c8382c', '#2c6ec8', '#e8e2d6', '#f2c230', '#3a8a4a', '#1c1b1f', '#8a8f9a', '#e07a2a', '#6a3a8a', '#4ab0c8'];
+
+/**
+ * The road bridge over the interstate: the avenue's north street goes on
+ * east, up a ramp, over the traffic on a deck and down the other side,
+ * with a parapet all along so nobody rolls off it.
+ */
+const BRIDGE = 3.2;
+function overpass(c) {
+  c.flat(90, 6, 2, 4, 0, { surface: 'road' });
+  c.slope(92, 6, 18, 4, 0, BRIDGE, 'x', { surface: 'road', wall: '#a7a39a' });
+  c.deck(110, 6, 13, 4, BRIDGE, { colour: '#a7a39a' });
+  c.slope(123, 6, 18, 4, BRIDGE, 0, 'x', { surface: 'road', wall: '#a7a39a' });
+  const height = (x) => (x <= 110 ? BRIDGE * (x - 92) / 18 : x >= 123 ? BRIDGE * (141 - x) / 18 : BRIDGE);
+  for (const [z0, z1] of [[5.8, 6], [10, 10.2]]) {
+    // Over the interstate it's a railing up on the deck; along the ramps, a wall from the ground, stepped up with the road.
+    wall(c, 110, z0, 123, z1, BRIDGE, BRIDGE + 0.6, '#8a8f9a', 'shiny');
+    for (let x = 94; x < 110; x += 2) wall(c, x, z0, x + 2, z1, 0, height(x + 2) + 0.6, '#b0aa9e', 'matte', 'block');
+    for (let x = 123; x < 139; x += 2) wall(c, x, z0, x + 2, z1, 0, height(x) + 0.6, '#b0aa9e', 'matte', 'block');
+  }
+  for (let x = 93; x < 141; x += 2) if (x < 110 || x > 123) c.mark(x, 7.94, 1, 0.12, '#f2c230');
+  for (let x = 110.5; x < 123; x += 2) c.mark(x, 7.94, 1, 0.12, '#f2c230');
+  c.lamp(116.5, 8, { colour: '#ffb35a', reach: 7, height: 4.5, y: BRIDGE });
+}
+
+/** The east side's streets: three down, three across, painted and lit like the west's. */
+const DOWN_E = [142, 190, 242];
+const ACROSS_E = [6, 60, 114];
+function eastStreets(c) {
+  for (const x of DOWN_E) c.flat(x, 6, 4, 112, 0, { surface: 'road' });
+  for (const z of ACROSS_E) c.flat(z === 6 ? 141 : 142, z, z === 6 ? 105 : 104, 4, 0, { surface: 'road' });
+  const inStreet = (v, list) => list.some((s) => v >= s - 0.01 && v <= s + 4.01);
+  for (const z of ACROSS_E) for (let x = 142.5; x < 245; x += 2) if (!inStreet(x, DOWN_E) && !inStreet(x + 1, DOWN_E)) c.mark(x, z + 1.94, 1, 0.12, '#f2c230');
+  for (const x of DOWN_E) for (let z = 6.5; z < 117; z += 2) if (!inStreet(z, ACROSS_E) && !inStreet(z + 1, ACROSS_E)) c.mark(x + 1.94, z, 0.12, 1, '#f2c230');
+  for (const x of DOWN_E) {
+    for (const z of ACROSS_E) {
+      for (let k = 0; k < 4; k++) {
+        if (z > 6) c.mark(x + 0.2 + k, z - 0.9, 0.5, 0.8);
+        if (z < 114) c.mark(x + 0.2 + k, z + 4.1, 0.5, 0.8);
+        if (x > 142) c.mark(x - 0.9, z + 0.2 + k, 0.8, 0.5);
+        if (x < 242) c.mark(x + 4.1, z + 0.2 + k, 0.8, 0.5);
+      }
+    }
+  }
+  for (const x of DOWN_E) for (const z of ACROSS_E) if (x > 142) c.place('streetlamp', x - 0.2, z - 0.2, { angle: -Math.PI / 4 });
+  for (const x of [246.2]) for (const z of [33, 87]) c.place('streetlamp', x, z, { angle: Math.PI });
+  for (const z of [60, 114]) for (const x of [166, 218]) c.place('streetlamp', x, z - 0.2, { angle: -Math.PI / 2 });
+  // Pines down the far edge and along the bottom.
+  for (let z = 10; z < 118; z += 7) c.place('pine', 248.5, z + 0.5, { scale: 1.1, angle: z });
+  for (let x = 150; x < 244; x += 9) c.place('pine', x + 0.5, 120.5, { scale: 1 + (x % 3) * 0.1, angle: x });
+}
+
+/** Big Rig Truck Stop: the diner, the lot with the rigs parked up, a kicker ramp, by the interstate. */
+function truckStop(c) {
+  c.flat(126, 12, 15, 47, 0, { surface: 'lot' });
+  c.block(129, 13, 9, 6, 2.6, { wall: '#f0e6d0', facade: 'shop', base: 0, door: 's', lit: 1 });
+  c.prop('marquee', 133.5, 16, { w: 7, y: 2.6, h: 1.4, facing: 's', text: 'BIG RIG DINER', sub: 'EAT · GAS · NAP', bg: '#1c3a6a', fg: '#ffd27a' });
+  for (const x of [127, 140]) c.place('streetlamp', x, 21, { angle: x < 130 ? 0 : Math.PI });
+  // The rigs, in two rows, room to roll between them.
+  for (const [i, x] of [129, 131.6, 134.2, 136.8, 139.4].entries()) {
+    parked(c, 'boxtruck', x, 31, { paint: PAINTS[(i * 3) % PAINTS.length] });
+    parked(c, i % 2 ? 'boxtruck' : 'tanker', x, 43.5, { turn: 2, paint: PAINTS[(i * 7 + 1) % PAINTS.length] });
+  }
+  for (let x = 127.75; x < 141; x += 2.6) {
+    c.mark(x, 29, 0.1, 4).mark(x, 41, 0.1, 5);
+  }
+  // A kicker: up the ramp and off the end.
+  c.slope(132, 50, 3, 3, 0, 1.1, 'z', { surface: 'metal', wall: '#5a6068' });
+  for (let k = 0; k < 3; k++) c.mark(132.2 + k, 49.2, 0.6, 0.5, '#f2c230');
+}
+
+/** The Drive-in: rows of cars facing the big screen, a snack bar with the projector in it. */
+function driveIn(c) {
+  c.flat(123, 62, 19, 60, 0, { surface: 'gravel' });
+  c.prop('marquee', 132, 117.6, { w: 15, y: 1.4, h: 6.4, facing: 'n', text: 'TONIGHT', sub: 'ATTACK OF THE 50 FT HAMSTER', bg: '#f4f1ea', fg: '#c8382c', posts: 3.5 });
+  for (const x of [125.2, 132, 138.8]) c.solid(x - 0.2, 0, 117.4, x + 0.2, 7.8, 117.8);
+  c.block(129, 66, 6, 4, 2.2, { wall: '#f0d8a0', facade: 'shop', base: 0, door: 's', lit: 1 });
+  c.prop('marquee', 132, 68, { w: 5, y: 2.2, h: 0.9, facing: 's', text: 'SNACK BAR', bg: '#c8382c', fg: '#fff6e0' });
+  let k = 0;
+  for (const z of [82, 90, 98, 106]) {
+    for (const x of [126, 129, 132, 135, 138]) {
+      if ((x + z) % 7 === 0) continue;
+      parked(c, ['sedan', 'hatchback', 'pickup'][k % 3], x, z, { paint: PAINTS[(k * 3 + 2) % PAINTS.length] });
+      k++;
+    }
+  }
+  for (const [x, z] of [[124, 78], [140, 78], [124, 110], [140, 110]]) c.place('streetlamp', x, z, { angle: x < 130 ? 0 : Math.PI });
+}
+
+/** Crude Acres: trailers in rows on gravel lanes, a trampoline or two, cars on blocks. */
+function crudeAcres(c) {
+  block(c, 146, 10, 44, 50, 'grass');
+  c.flat(147, 23, 42, 2, CURB, { surface: 'gravel' });
+  c.flat(147, 40, 42, 2, CURB, { surface: 'gravel' });
+  c.flat(166, 11, 2, 48, CURB, { surface: 'gravel' });
+  const colours = ['#e8e4dc', '#f0d9a8', '#c9d8e8', '#d8b8c8', '#cfe3c2', '#e8c8a0'];
+  const stripes = ['#2c6ec8', '#c8382c', '#3a8a4a', '#e07a2a', '#6a3a8a'];
+  let n = 0;
+  for (const z of [13, 18, 27, 33, 44, 50]) {
+    for (const x of [148, 154.5, 161, 169.5, 176, 182.5]) {
+      if (z === 50 && x < 160) continue;
+      c.prop('trailer', x, z, { w: 5, d: 2.4, y: CURB, colour: colours[n % colours.length], stripe: stripes[(n * 3) % stripes.length] });
+      c.solid(x, CURB, z, x + 5, CURB + 1.6, z + 2.4);
+      n++;
+    }
+  }
+  // The trampolines: one out in the yard, one to bounce up onto a trailer's roof.
+  for (const [x, z] of [[149, 53], [156, 48]]) {
+    c.flat(x, z, 2, 2, CURB + 0.1, { surface: 'trampoline', wall: '#2c6ec8' });
+    c.prop('trampoline', x, z, { w: 2, d: 2, y: CURB + 0.1 });
+  }
+  parked(c, 'pickup', 186.5, 56, { turn: 1, paint: '#8a5a3a' });
+  c.place('junker', 152, 57, { angle: 0.4 });
+  c.cylinder(152, 57, 0.9, 0, 0.9);
+  for (const [x, z] of [[147.5, 22], [188.5, 22], [147.5, 39], [188.5, 39]]) c.place('streetlamp', x, z, { angle: x < 160 ? 0 : Math.PI });
+  c.place('tree', 179, 56.5, { scale: 1.1 }).place('tree', 159, 37.5, { scale: 0.9 });
+}
+
+/** Baron's Hill: a big round hill, the oil baron's mansion on top, the drive straight up the front. */
+export const BARON = { x: 218, z: 35, top: CURB + 5, flat: 7, reach: 24 };
+function baronsHill(c) {
+  block(c, 194, 10, 48, 50, 'lawn');
+  const B = BARON;
+  c.surface(195, 11, 46, 48, (X, Z) => {
+    const r = Math.hypot(X - B.x, Z - B.z);
+    return CURB + (B.top - CURB) * smooth(1 - (r - B.flat) / (B.reach - B.flat));
+  }, { surface: 'lawn' });
+  c.paint(217, 41, 2, 18, 'brick');
+  c.block(213, 30, 10, 7, B.top + 3.2, { roof: 'pitched', ridge: 'x', wall: '#e8dcc0', facade: 'house', base: B.top, door: 's', pitch: 1.2, lit: 0.8 });
+  for (const x of [212, 224]) c.place('statue', x, 40, { turn: 2 });
+  for (let i = 0; i < 14; i++) {
+    const a = (i / 14) * Math.PI * 2;
+    if (Math.abs(a - Math.PI / 2) < 0.4) continue;
+    c.place(i % 2 ? 'pine' : 'tree', B.x + Math.cos(a) * 17.5, B.z + Math.sin(a) * 17.5, { scale: 1.1, angle: i });
+  }
+  for (const x of [216.6, 219.4]) for (const z of [45, 51, 57]) c.place('streetlamp', x, z, { angle: x < 218 ? 0 : Math.PI, scale: 0.8 });
+}
+
+/** Wildcat Speedway: a dirt oval, banked round the ends, walled outside, a grandstand down the west side. */
+export const OVAL = { x: 168, z0: 81, z1: 97, inner: 9, outer: 15 };
+function speedway(c) {
+  const O = OVAL;
+  const rOf = (X, Z) => Math.hypot(X - O.x, Z - Math.min(O.z1, Math.max(O.z0, Z)));
+  const bank = (X, Z) => smooth(Math.max(O.z0 - Z, Z - O.z1, 0) / 5);
+  const height = (X, Z) => {
+    const r = rOf(X, Z);
+    if (r > O.outer + 2) return 0;
+    const k = Math.max(0, Math.min(r, O.outer) - O.inner) / (O.outer - O.inner);
+    return 1.4 * bank(X, Z) * k * k;
+  };
+  c.surface(146, 64, 44, 50, height, { surface: 'grass' });
+  for (let j = 64; j < 114; j++) {
+    for (let i = 146; i < 190; i++) {
+      const r = rOf(i + 0.5, j + 0.5);
+      if (r >= O.inner && r < O.outer + 0.3) c.paint(i, j, 1, 1, 'dirt');
+      const gap = j >= 87 && j < 91;
+      if (r >= O.outer + 0.3 && r < O.outer + 1.9 && !gap) c.flat(i, j, 1, 1, 2 + 1.4 * bank(i + 0.5, j + 0.5), { surface: 'concrete', wall: '#c8c2b4', wtex: 'block' });
+    }
+  }
+  // The grandstand, in two halves either side of the way in.
+  for (const [z, d] of [[72, 14], [92, 14]]) {
+    c.flat(146, z, 2, d, 1.8, { surface: 'concrete', wall: '#9aa0aa', wtex: 'block' });
+    c.flat(148, z, 2, d, 1.2, { surface: 'concrete', wall: '#9aa0aa', wtex: 'block' });
+    c.flat(150, z, 1, d, 0.6, { surface: 'concrete', wall: '#9aa0aa', wtex: 'block' });
+  }
+  // The start and finish, chequered across the west straight.
+  for (let i = 0; i < 12; i++) for (let j = 0; j < 2; j++) if ((i + j) % 2 === 0) c.mark(153 + i * 0.5, 88.5 + j * 0.5, 0.5, 0.5, '#f4f1ea');
+  // In the middle: a jump, the pits.
+  c.slope(166, 84, 4, 3, 0, 1.0, 'z', { surface: 'metal', wall: '#5a6068' });
+  c.block(170, 92, 4, 3, 1.6, { wall: '#c8c2b4', wtex: 'corrugated' });
+  c.prop('marquee', 168, 64.4, { w: 9, y: 0.6, h: 1.6, facing: 'n', text: 'WILDCAT SPEEDWAY', bg: '#1c1b1f', fg: '#f2c230' });
+  for (const [x, z] of [[160, 73], [176, 73], [160, 105], [176, 105]]) c.place('streetlamp', x, z, { angle: x < 168 ? 0 : Math.PI });
+}
+
+/** The Quarry: a pit cut down in steps to a sandy floor, a haul road down the north side, the crusher and the blasting shed up top. */
+export const PIT = { x: 218, z: 89, floor: -4.2 };
+function quarry(c) {
+  c.flat(194, 64, 48, 50, 0, { surface: 'gravel' });
+  for (let j = 66; j < 112; j++) {
+    for (let i = 196; i < 240; i++) {
+      const r = Math.hypot(i + 0.5 - PIT.x, j + 0.5 - PIT.z);
+      const level = r < 6 ? PIT.floor : r < 10.5 ? -2.8 : r < 15 ? -1.4 : 0;
+      if (level < 0) c.flat(i, j, 1, 1, level, { surface: r < 6 ? 'sand' : 'gravel', wall: '#9a8a72' });
+    }
+  }
+  c.slope(216, 70, 4, 14, 0, PIT.floor, 'z', { surface: 'dirt', wall: '#9a8a72' });
+  c.paint(216, 64, 4, 6, 'dirt').paint(216, 84, 4, 6, 'dirt');
+  c.block(228, 65, 6, 4, 3.0, { wall: '#c8c2b4', wtex: 'corrugated' });
+  c.block(236, 72, 3, 3, 1.8, { wall: '#c8382c', wtex: 'corrugated' });
+  c.prop('trailer', 198, 66, { w: 4, d: 2, y: 0 });
+  c.solid(198, 0, 66, 202, 1.6, 68);
+  parked(c, 'boxtruck', 213.5, 92, { paint: '#f2c230' });
+  parked(c, 'boxtruck', 223, 87.5, { turn: 1, paint: '#e07a2a' });
+  for (const [x, z, s] of [[208, 80, 2.4], [228, 98, 2.8], [206, 99, 2.2], [231, 82, 2.0], [221, 104, 2.6]]) c.place('rock', x, z, { scale: s, angle: x });
+  for (const [x, z] of [[205, 76], [231, 102], [204, 102]]) c.place('streetlamp', x, z, { angle: Math.atan2(PIT.z - z, PIT.x - x) - Math.PI / 2 });
+  c.lamp(PIT.x, PIT.z, { colour: '#ffd8a0', reach: 8, height: 3.5, y: PIT.floor });
+  c.prop('sign', 214.6, 67, { text: 'BLASTING\nZONE', y: 0 });
 }

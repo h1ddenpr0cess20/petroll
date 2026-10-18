@@ -2,7 +2,7 @@
   "name": "petroll",
   "version": "0.1.0",
   "private": true,
-  "description": "Petroll: a hamster in a plastic run-about ball, loose in an oil town. One open world \u2014 suburbs, downtown traffic, a gas station, the interstate, an oil field and a refinery \u2014 and 22 golden sunflower seeds to find.",
+  "description": "Petroll: a hamster in a plastic run-about ball, loose in an oil town. One open world \u2014 suburbs, downtown, the interstate, an oil field, a refinery, a speedway, a quarry \u2014 and the townsfolk's odd jobs to do against the clock.",
   "type": "module",
   "engines": {
     "node": ">=22.12"

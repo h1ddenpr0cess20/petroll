@@ -135,9 +135,9 @@ const STEEL = '#6a7078', RED = '#c8382c', YELLOW = '#e8b020', WHITE = '#e8e4dc',
 const DRAW = {
   fence(k, t, p, y, map) {
     // Chain-link panels round the top of the bank, galvanised posts every two tiles.
-    const S = p.size, i = p.inset / 2;
-    const at = (x, z) => Math.min(2.5, Math.max(0, (5 - Math.min(x, z, S - x, S - z)) * 0.5));
-    for (const [x0, z0, x1, z1, n] of [[0, i, S, i, [0, 0, 1]], [S, S - i, 0, S - i, [0, 0, -1]], [i, S, i, 0, [1, 0, 0]], [S - i, 0, S - i, S, [-1, 0, 0]]]) {
+    const W = p.w, D = p.d, i = p.inset / 2;
+    const at = (x, z) => Math.min(2.5, Math.max(0, (5 - Math.min(x, z, W - x, D - z)) * 0.5));
+    for (const [x0, z0, x1, z1, n] of [[0, i, W, i, [0, 0, 1]], [W, D - i, 0, D - i, [0, 0, -1]], [i, D, i, 0, [1, 0, 0]], [W - i, 0, W - i, D, [-1, 0, 0]]]) {
       const L = Math.hypot(x1 - x0, z1 - z0);
       for (let s = 0; s < L; s += 1) {
         const ax = x0 + ((x1 - x0) * s) / L, az = z0 + ((z1 - z0) * s) / L, bx = x0 + ((x1 - x0) * (s + 1)) / L, bz = z0 + ((z1 - z0) * (s + 1)) / L;
@@ -288,9 +288,9 @@ const DRAW = {
   },
 
   trailer(k, t, p) {
-    const { x, z, w, d, y } = p;
-    t.box('corrugated', x, y + 0.3, z, x + w, y + 1.6, z + d, '#e8e4dc', { band: 1.3 });
-    k.slab(x - 0.02, y + 0.95, z - 0.02, x + w + 0.02, y + 1.05, z + d + 0.02, '#2c6ec8');
+    const { x, z, w, d, y, colour = '#e8e4dc', stripe = '#2c6ec8' } = p;
+    t.box('corrugated', x, y + 0.3, z, x + w, y + 1.6, z + d, colour, { band: 1.3 });
+    k.slab(x - 0.02, y + 0.95, z - 0.02, x + w + 0.02, y + 1.05, z + d + 0.02, stripe);
     k.slab(x + 0.8, y + 0.4, z + d + 0.01, x + 1.4, y + 1.4, z + d + 0.04, '#8a8f9a', { finish: 'shiny' });
     k.slab(x + 2.4, y + 0.85, z + d + 0.01, x + 3.4, y + 1.3, z + d + 0.04, '#ffe6a8', { finish: 'glow' });
     for (const s of [0.3, w - 0.3]) for (const zz of [z + 0.2, z + d - 0.2]) k.box([x + s, y + 0.15, zz], [0.3, 0.3, 0.3], '#7a7f86');
@@ -439,10 +439,61 @@ const DRAW = {
   },
 
   shop() {},
+
+  trampoline(k, t, p) {
+    // Padding round the mat, blue and yellow, and the springs showing under its edge.
+    const { x, z, w, d, y } = p;
+    const pad = 0.16;
+    for (const [x0, z0, x1, z1, c] of [[x, z, x + w, z + pad, '#2c6ec8'], [x, z + d - pad, x + w, z + d, '#2c6ec8'], [x, z + pad, x + pad, z + d - pad, YELLOW], [x + w - pad, z + pad, x + w, z + d - pad, YELLOW]]) {
+      k.slab(x0, y, z0, x1, y + 0.07, z1, c, { finish: 'shiny' });
+    }
+    for (let s = 0.3; s < w; s += 0.35) for (const zz of [z + 0.08, z + d - 0.08]) k.cyl([x + s, y - 0.05, zz], 0.03, 0.1, '#c8ccd2', { finish: 'shiny', segments: 6 });
+  },
+
+  marquee(k, t, p, y, map) {
+    // A sign board on posts (or on a roof), lit from the front.
+    const { w, h, facing } = p;
+    const across = facing === 'n' || facing === 's';
+    const out = { n: [0, -1], s: [0, 1], e: [1, 0], w: [-1, 0] }[facing];
+    const half = w / 2;
+    const ax = across ? [1, 0] : [0, 1];
+    if (p.posts) {
+      for (const s of [-half + 0.2, 0, half - 0.2]) k.cyl([p.x + ax[0] * s, y + p.y / 2 + 0.2, p.z + ax[1] * s], 0.16, p.y + 0.4, '#5a6068', { segments: 10, finish: 'shiny' });
+    } else {
+      for (const s of [-half * 0.7, half * 0.7]) k.cyl([p.x + ax[0] * s, y + p.y / 2, p.z + ax[1] * s], 0.06, p.y, '#5a6068', { segments: 8, finish: 'shiny' });
+    }
+    const x0 = p.x - (across ? half : 0.08), x1 = p.x + (across ? half : 0.08);
+    const z0 = p.z - (across ? 0.08 : half), z1 = p.z + (across ? 0.08 : half);
+    k.slab(x0 - 0.05, y + p.y, z0 - 0.05, x1 + 0.05, y + p.y + h, z1 + 0.05, '#2a2c30');
+    k.slab(x0 - 0.08, y + p.y + h, z0 - 0.08, x1 + 0.08, y + p.y + h + 0.08, z1 + 0.08, '#8a8f9a');
+    map.lamp(p.x + out[0] * 1.2, p.z + out[1] * 1.2, { colour: p.fg ?? '#fff0d0', reach: Math.max(3, w * 0.5), height: p.y + h / 2, y, glow: 0.5 });
+  },
 };
 
 /** Words for the structures that carry them. */
 const WORDS = {
+  marquee(GFX, p, y) {
+    const { w, h, facing } = p;
+    const out = { n: [0, -1], s: [0, 1], e: [1, 0], w: [-1, 0] }[facing];
+    const angle = { n: Math.PI, s: 0, e: Math.PI / 2, w: -Math.PI / 2 }[facing];
+    const px = Math.round(Math.min(2048, 256 * w / Math.max(h, 0.5) * 0.6 + 256));
+    const H = Math.round(px * h / w);
+    const big = Math.round(H * (p.sub ? 0.5 : 0.72));
+    const tex = words(GFX, p.text, {
+      w: px, h: H, bg: p.bg ?? '#1c1b1f', fg: p.fg ?? '#f2c230', font: `400 ${big}px`,
+      accent: p.sub ? (ctx, cw, ch) => {
+        ctx.fillStyle = p.fg ?? '#f2c230';
+        ctx.fillRect(0, ch * 0.74, cw, ch * 0.26);
+        ctx.fillStyle = p.bg ?? '#1c1b1f';
+        ctx.font = `400 ${Math.round(ch * 0.19)}px Anton, "Arial Black", Impact, sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(p.sub, cw / 2, ch * 0.87);
+        ctx.translate(0, -ch * 0.12);
+      } : null,
+    });
+    return [sign(GFX, tex, [p.x + out[0] * 0.14, y + p.y + h / 2, p.z + out[1] * 0.14], w * 0.97, h * 0.94, angle, 0.8)];
+  },
   billboard(GFX, p, y) {
     const tex = words(GFX, 'PETROLL\nRoll on in', {
       w: 1024, h: 600, bg: '#f4c430', fg: '#1c1b1a', font: '400 190px',
@@ -532,7 +583,7 @@ export function structureLights(map) {
   const dummy = { slab() {}, box() {}, cyl() {}, cone() {}, sphere() {}, torus() {}, beam() {}, get empty() { return true; } };
   const t = { cylinder() {}, face() {}, box() {} };
   for (const p of map.props) {
-    if (!['canopy', 'billboard', 'tank', 'stack'].includes(p.type)) continue;
+    if (!['canopy', 'billboard', 'tank', 'stack', 'marquee'].includes(p.type)) continue;
     const y = p.y ?? map.heightAt(p.x, p.z) ?? 0;
     DRAW[p.type](dummy, t, p, y, map, dummy);
   }

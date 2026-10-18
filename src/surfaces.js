@@ -9,6 +9,8 @@
  *   running in place.
  * - `sinks`: tar. Roll in and the bubble goes under.
  * - `shine`: how it reflects (`wet`, `oil`, `tar`), if it does.
+ * - `bounce`: a trampoline. Land on it and it throws the bubble up again,
+ *   this fast, and the landing doesn't hurt.
  * - `map`: its colour on the map in the corner.
  */
 export const SURFACES = Object.freeze({
@@ -32,6 +34,8 @@ export const SURFACES = Object.freeze({
   wet: { tex: 'concrete', top: '#6a7a86', wtex: 'block', wall: '#55575c', drag: 0.2, grip: 0.55, shine: 'wet', map: '#4a5862' },
   tar: { tex: 'asphalt', top: '#0e0e10', wtex: 'cliff', wall: '#1a1a1e', drag: 6, grip: 0.1, sinks: true, shine: 'tar', map: '#060608' },
   pool: { tex: 'pooltile', top: '#8ccbe2', wtex: 'pooltile', wall: '#cfe8f0', drag: 0.45, grip: 1, map: '#7cc0dc' },
+  lot: { tex: 'asphalt', top: '#55575e', wtex: 'block', wall: '#8a8a8e', drag: 0.5, grip: 1, map: '#3a3c42' },
+  trampoline: { tex: 'grate', top: '#2a4a9a', wtex: 'hull', wall: '#3a4a6a', drag: 0.5, grip: 1, bounce: 12, map: '#3a6ad8' },
   plank: { tex: 'planks', top: '#9a7448', wtex: 'timber', wall: '#6a4a2c', drag: 0.6, grip: 1, map: '#8a6440' },
 });
 

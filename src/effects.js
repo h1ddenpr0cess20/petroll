@@ -1,7 +1,6 @@
 /**
  * Bits that fly: shards of plastic when the bubble pops, sparks off a car,
- * black bubbles when the tar takes it, glitter round a golden seed, a puff
- * of chaff off an eaten seed. Each bit is ballistic, bounces off the ground
+ * black bubbles when the tar takes it, glitter for a job done. Each bit is ballistic, bounces off the ground
  * once or twice, and shrinks away.
  */
 
@@ -34,8 +33,6 @@ export function createEffects(GFX, scene) {
   const tarMaterial = new GFX.MeshPhysicalMaterial({ name: 'tar-bubble', color: new GFX.Color('#0c0c10'), roughness: 0.05, clearcoat: 1 });
   const sparkMaterial = new GFX.MeshBasicMaterial({ name: 'spark', color: new GFX.Color('#ffd27a') });
   const spark = new GFX.BoxGeometry(0.03, 0.03, 0.12);
-  const chaff = new GFX.PlaneGeometry(0.08, 0.05);
-  const chaffMaterial = new GFX.MeshBasicMaterial({ name: 'chaff', color: new GFX.Color('#efe6d2'), side: GFX.DoubleSide });
   const paper = new GFX.PlaneGeometry(0.16, 0.1);
   const confettiColours = ['#f2c230', '#fff2b0', '#e8902c', '#ffffff', '#f5d76e'].map((c) => new GFX.MeshBasicMaterial({ color: new GFX.Color(c), side: GFX.DoubleSide }));
 
@@ -92,15 +89,7 @@ export function createEffects(GFX, scene) {
       }
     },
 
-    /** A seed eaten: a puff of husk. */
-    chaff(x, y, z) {
-      for (let i = 0; i < 5; i++) {
-        const [ox, oy, oz] = outward(1.2, 2);
-        spawn(new GFX.Mesh(chaff, chaffMaterial), { x, y, z, vx: ox, vy: oy, vz: oz, life: 0.5 + Math.random() * 0.3, spin: 14, drag: 2, floaty: 0.5, bounce: 0 });
-      }
-    },
-
-    /** Glitter, for a golden seed. */
+    /** Glitter, for a job done. */
     confetti(x, y, z) {
       for (let i = 0; i < 80; i++) {
         const m = new GFX.Mesh(paper, confettiColours[i % confettiColours.length]);

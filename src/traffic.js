@@ -110,7 +110,7 @@ export function createTraffic(GFX, map, world) {
   function place(c, dt) {
     along(c.path, c.s, at);
     const x = at.x, z = at.z;
-    const y = map.heightAt(x, z) ?? 0;
+    const y = c.road.over ? map.roadAt(x, z) : map.heightAt(x, z) ?? 0;
     if (dt > 0) {
       // From where it was: a wrap at the end of an open road is a jump, not a speed.
       const jump = Math.hypot(x - c.x, z - c.z) > 2;

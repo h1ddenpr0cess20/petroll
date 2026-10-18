@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#22305a">
-<meta name="description" content="Petroll: a hamster in a plastic ball, loose in an oil town. Roll through the suburbs, the traffic, the gas station, the oil field and the refinery, hunting golden sunflower seeds.">
+<meta name="description" content="Petroll: a hamster in a plastic ball, loose in an oil town. Roll round the suburbs, downtown, the interstate, the oil field, the refinery, the speedway and the quarry, doing odd jobs for the townsfolk.">
 <title>Petroll</title>
 </head>
 <body>
@@ -13,34 +13,74 @@
 <header id="top" hidden>
   <div class="left">
     <div id="place"></div>
-    <div class="gold"><span class="star">★</span><span id="gold">0/0</span></div>
+    <div class="cash"><span id="cash">$0</span></div>
   </div>
   <div class="mid">
     <span class="label">bubble</span>
     <div id="bubble"><div id="bubble-fill"></div></div>
+    <div id="dash"><div id="dash-fill"></div></div>
   </div>
   <div class="right">
-    <div><span class="label">seeds</span><span id="seeds">0</span></div>
-    <div><span class="label">time</span><span id="clock">0:00</span></div>
+    <div><span class="label">jobs</span><span id="jobs">0/0</span></div>
   </div>
 </header>
+
+<aside id="job" hidden>
+  <div id="job-title"></div>
+  <div id="job-text"></div>
+  <div class="job-row"><span id="job-count"></span><span id="job-clock"></span></div>
+  <div id="job-meter" hidden><div id="job-meter-fill"></div></div>
+</aside>
 
 <canvas id="minimap" width="200" height="200" hidden></canvas>
 <div id="banner" hidden></div>
 <div id="toast" hidden></div>
-<div id="pause" hidden>PAUSED<small>P to carry on</small></div>
+
+<section id="offer" hidden>
+  <div class="who"><span id="offer-name"></span></div>
+  <h2 id="offer-title"></h2>
+  <p id="offer-brief"></p>
+  <div class="row"><span id="offer-pay"></span><button id="offer-take" type="button">TAKE THE JOB</button></div>
+  <p class="hint"><kbd>Enter</kbd> or <kbd>A</kbd> to take it on · roll away to say no</p>
+</section>
+
+<section id="failed" class="modal" hidden>
+  <h2>JOB FAILED</h2>
+  <p id="failed-why"></p>
+  <div class="row">
+    <button id="failed-retry" type="button">TRY AGAIN</button>
+    <button id="failed-leave" type="button">FORGET IT</button>
+  </div>
+  <p class="hint"><kbd>Enter</kbd> try again · <kbd>Esc</kbd> forget it</p>
+</section>
+
+<section id="shop" class="modal" hidden>
+  <h2 id="shop-name">BUBBLE SHOP</h2>
+  <p class="wallet">you have <span id="shop-cash">$0</span></p>
+  <ul id="shop-items"></ul>
+  <p class="hint"><kbd>↑</kbd><kbd>↓</kbd> choose · <kbd>Enter</kbd> buy or wear · <kbd>Esc</kbd> leave</p>
+  <button id="shop-close" type="button">LEAVE</button>
+</section>
+
+<div id="pause" hidden>PAUSED<small>P to carry on</small><small id="pause-quit" hidden>X to give up the job</small></div>
+
+<div id="touch" hidden>
+  <button id="touch-dash" type="button">DASH</button>
+  <button id="touch-hop" type="button">HOP</button>
+</div>
 
 <section id="title" hidden>
   <div class="logo">
     <h1>PETROLL</h1>
-    <p class="tag">a hamster in a ball · petroleum springs</p>
+    <p class="tag">a hamster in a ball · odd jobs · petroleum springs</p>
   </div>
   <div class="menu">
     <button id="start" type="button">ROLL OUT</button>
     <button id="fresh" type="button" hidden>start over</button>
     <p id="best"></p>
     <p class="help">
-      <span class="keys"><kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>→</kbd> or <kbd>WASD</kbd> roll</span>
+      <span class="keys"><kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>→</kbd> or <kbd>WASD</kbd> roll · <kbd>Space</kbd> hop · <kbd>Shift</kbd> dash</span>
+      <span>roll up to anybody with a <b class="bang">!</b> over their head for a job</span>
       <span>hold the mouse or a finger — roll toward it</span>
       <span class="keys"><kbd>Q</kbd><kbd>E</kbd> or right-drag turn · wheel zoom · <kbd>C</kbd> reset view</span>
       <span class="touch">two fingers: pinch to zoom, twist to turn</span>

@@ -15,8 +15,11 @@
  * - Two fingers: pinch to zoom, twist to turn, drag up or down to tilt.
  * - Gamepad: right stick to turn and tilt, shoulder buttons to zoom.
  *
- * Buttons come out as one-shot presses: `start` (Enter, Space, A or a tap),
- * `pause` (P, Escape, Start), `mute` (M), `home` (C, or the right stick pressed).
+ * Buttons come out as one-shot presses: `start` (Enter, A or a tap), `hop`
+ * (Space), `dash` (Shift, X or the right trigger), `back` (Escape or B),
+ * `pause` (P, Escape, Start), `quit` (X on the keyboard, Back on a pad:
+ * give up a job), `mute` (M), `home` (C, or the right stick pressed), and
+ * `up` and `down` for going through a menu (arrows, W and S, the d-pad).
  */
 
 const KEYS = {
@@ -29,9 +32,11 @@ const KEYS = {
   Minus: 'zoomOut', NumpadSubtract: 'zoomOut',
 };
 const PRESSES = {
-  Enter: 'start', Space: 'start',
-  KeyP: 'pause', Escape: 'pause',
-  KeyM: 'mute', KeyC: 'home',
+  Enter: 'start', NumpadEnter: 'start', Space: 'hop',
+  ShiftLeft: 'dash', ShiftRight: 'dash',
+  KeyP: 'pause', Escape: ['pause', 'back'],
+  KeyX: 'quit', KeyM: 'mute', KeyC: 'home',
+  ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down',
 };
 
 /** How far from the marble, in CSS pixels, the pointer has to be for a full push. */
@@ -63,7 +68,7 @@ export function createInput(surface, { anchor }) {
       e.preventDefault();
     }
     if (PRESSES[e.code] && !e.repeat) {
-      presses.push(PRESSES[e.code]);
+      presses.push(...[PRESSES[e.code]].flat());
       if (e.code === 'Space') e.preventDefault();
     }
   });
@@ -163,7 +168,7 @@ export function createInput(surface, { anchor }) {
         if (b(15)) x += 1;
         const [, , rx = 0, ry = 0] = pad.axes;
         padLook = { turn: -dead(rx), tilt: dead(ry), zoom: (b(4) ? -1 : 0) + (b(5) ? 1 : 0) };
-        const now = { start: b(0), pause: b(9), home: b(11) };
+        const now = { start: b(0), back: b(1), dash: b(2) || b(7), quit: b(8), pause: b(9), home: b(11), up: b(12) || sy < -0.6, down: b(13) || sy > 0.6 };
         for (const name of Object.keys(now)) if (now[name] && !padWas[name]) presses.push(name);
         padWas = now;
       }
@@ -192,6 +197,11 @@ export function createInput(surface, { anchor }) {
     /** The one-shot presses since last asked. */
     take() {
       return presses.splice(0);
+    },
+
+    /** A press from somewhere else (the on-screen buttons). */
+    press(name) {
+      presses.push(name);
     },
 
     get pointing() { return pointer !== null; },
