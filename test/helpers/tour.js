@@ -2,7 +2,9 @@
  * The way round every golden seed in the town, for the autopilot: where it
  * finds its own way (`to`), and where it follows set waypoints (`via`) —
  * up the quarter pipe flat out, over the footbridge and off it onto the
- * central reservation, across the interstate in a gap in the traffic,
+ * central reservation, round the east side of town (off a trampoline onto
+ * a roof, down the quarry's haul road between the truck's lanes, over the
+ * speedway's jump), across the interstate in a gap in the traffic,
  * along the pipeline, under the pumpjack between nods, along the plank to
  * the island in the tar, up and down the lifts, down flare alley one flare
  * at a time.
@@ -46,9 +48,24 @@ export const TOUR = [
   { via: [v(116.5, 38.6, { speed: 1, stop: true, reckless: true, until: laneClear([113, 115], 38.6, 16) }), v(110.6, 38.6, { speed: 6, reckless: true })] },
   { to: [100.4, 35] },
   { via: [v(110.5, 35, { speed: 3 }), v(121.6, 35, { speed: 3 }), v(122.6, 32), v(122.6, 26.5, { speed: 2.5 })], expect: 'Under the billboard' },
-  { via: [v(122.6, 44.6, { speed: 3 }), v(123.3, 47.5, { speed: 2 })] },
-  { to: [121.6, 121.6] },
-  { via: [v(124.7, 124.7, { speed: 5 })], expect: 'The edge of the world' },
+  { via: [v(123.5, 44.6, { speed: 3 }), v(123.5, 51.5, { speed: 2 })] },
+  // Over the road bridge to the east side of town, and round it.
+  { to: [135.5, 37.2], expect: 'Between the rigs' },
+  { to: [131, 8] },
+  { via: [v(116.5, 8, { speed: 3, reckless: true })], expect: 'On the road bridge' },
+  { via: [v(131, 8, { speed: 3, reckless: true }), v(141.5, 8, { speed: 3 })] },
+  { to: [158, 21.4], stop: true },
+  { via: [v(158, 19.6, { speed: 5.8, radius: 0.6 }), v(158, 13.8, { speed: 2, air: true })], expect: "On the Hendersons' roof" },
+  { via: [v(158, 11.3, { speed: 2 })] },
+  { to: [218, 28.6], expect: 'Behind the mansion' },
+  { to: [251.4, 124.6], expect: 'The edge of the world' },
+  { to: [218, 66.5] },
+  { via: [v(218, 70, { speed: 2.5, reckless: true }), v(218, 84.5, { speed: 3, reckless: true }), v(216, 93.4, { speed: 2.5 })], expect: 'Bottom of the pit' },
+  { via: [v(218, 85, { speed: 2.5, reckless: true }), v(218, 70, { speed: 3, reckless: true }), v(218, 66.5, { speed: 2.5 })] },
+  { to: [168, 66.8], expect: 'Up the banking' },
+  { to: [168, 80.5], stop: true },
+  { via: [v(168, 83.5, { speed: 6, radius: 0.6 }), v(168, 90, { speed: 6 })], expect: 'Over the jump' },
+  { to: [132, 113], expect: 'The front row' },
   { to: [122.5, 101.5] },
   { via: [v(121.6, 101.5, { until: laneClear([118, 120], 101.5, 16), stop: true, reckless: true }), v(116.5, 101.5, { speed: 6, reckless: true, until: laneClear([113, 115], 101.5, 16), stop: true }), v(110, 101.5, { speed: 6, reckless: true })] },
   { to: [57.4, 68.5] },

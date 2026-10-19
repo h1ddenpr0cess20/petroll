@@ -1,7 +1,7 @@
 /**
  * Bits that fly: shards of plastic when the bubble pops, sparks off a car,
- * black bubbles when the tar takes it, glitter round a golden seed, a puff
- * of chaff off an eaten seed. Each bit is ballistic, bounces off the ground
+ * black bubbles when the tar takes it, glitter for a golden seed or a job
+ * done, a puff of chaff off an eaten seed. Each bit is ballistic, bounces off the ground
  * once or twice, and shrinks away.
  */
 
@@ -100,7 +100,7 @@ export function createEffects(GFX, scene) {
       }
     },
 
-    /** Glitter, for a golden seed. */
+    /** Glitter, for a golden seed or a job done. */
     confetti(x, y, z) {
       for (let i = 0; i < 80; i++) {
         const m = new GFX.Mesh(paper, confettiColours[i % confettiColours.length]);

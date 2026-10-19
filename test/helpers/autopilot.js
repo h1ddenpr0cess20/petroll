@@ -183,6 +183,8 @@ export function drive(tour, { limit = 2400, log = false } = {}) {
     const l = Math.hypot(px, pz);
     if (l > 1) { px /= l; pz /= l; }
 
+    // Off a trampoline: steer for where it's going while in the air.
+    if (o.air && !b.grounded) { px = dx / (d || 1); pz = dz / (d || 1); }
     const out = stepRun(run, [px, pz], STEP);
     if (out.hurt) hurts.push({ how: out.hits.join(','), hurt: +out.hurt.toFixed(1), leg: legIndex, time: +t.toFixed(1) });
     if (out.golden) {

@@ -6,7 +6,7 @@
  * and the flares unless there is no other way. A*, eight ways.
  */
 
-const CLIMB = 0.2;
+const CLIMB = 0.16;
 
 /** The heights along the edge a tile shares with its neighbour (dx, dz): mine, then theirs. */
 function edge(c, n, dx, dz) {
@@ -21,10 +21,48 @@ const top = (c) => Math.max(...c.h);
 
 export function createPlanner(map, { drop = 2.2, radius = 0.36 } = {}) {
   const { cols, rows } = map;
+  // The bridges: a tile under a bridge's deck is the deck, to the planner (not under a roof, though: there's a way under that).
+  const over = new Map();
+  for (const d of map.decks) {
+    if (d.h > 3.5 || d.roof) continue;
+    for (let z = Math.ceil(d.z); z + 1 <= d.z + d.d + 1e-6; z++) {
+      for (let x = Math.ceil(d.x); x + 1 <= d.x + d.w + 1e-6; x++) {
+        const c = map.cell(x, z);
+        if (c) over.set(z * cols + x, { ...c, h: [d.h, d.h, d.h, d.h], surface: 'concrete', deck: true });
+      }
+    }
+  }
+  map = Object.assign(Object.create(map), { cell: (x, z) => (x < 0 || z < 0 || x >= cols || z >= rows ? null : over.get(z * cols + x) ?? Object.getPrototypeOf(map).cell.call(map, x, z)) });
   const R = radius + 0.06;
-  const solids = map.solids;
+  // The solids and the cylinders, bucketed by the tiles they (grown by the ball) cover.
+  const buckets = new Map();
+  const file = (o, x0, z0, x1, z1) => {
+    for (let z = Math.floor(z0 - R); z <= Math.floor(z1 + R); z++) {
+      for (let x = Math.floor(x0 - R); x <= Math.floor(x1 + R); x++) {
+        const k = z * cols + x;
+        if (!buckets.has(k)) buckets.set(k, { solids: [], cylinders: [] });
+        buckets.get(k)[o.min ? 'solids' : 'cylinders'].push(o);
+      }
+    }
+  };
+  for (const s of map.solids) file(s, s.min[0], s.min[2], s.max[0], s.max[2]);
+  // (The townsfolk stand their ground too.)
+  for (const c of [...map.cylinders, ...map.givers.map((g) => ({ x: g.x, z: g.z, r: 0.34, y0: g.y ?? map.heightAt(g.x, g.z), y1: (g.y ?? map.heightAt(g.x, g.z)) + 1.6 }))]) file(c, c.x - c.r, c.z - c.r, c.x + c.r, c.z + c.r);
+  const nearBy = (ax, az, bx, bz) => {
+    const seen = new Set(), solids = [], cylinders = [];
+    for (let z = Math.floor(Math.min(az, bz)); z <= Math.floor(Math.max(az, bz)); z++) {
+      for (let x = Math.floor(Math.min(ax, bx)); x <= Math.floor(Math.max(ax, bx)); x++) {
+        const b = buckets.get(z * cols + x);
+        if (!b) continue;
+        for (const o of b.solids) if (!seen.has(o)) { seen.add(o); solids.push(o); }
+        for (const o of b.cylinders) if (!seen.has(o)) { seen.add(o); cylinders.push(o); }
+      }
+    }
+    return { solids, cylinders };
+  };
   /** Whether a ball at ground height `y` going from a to b would hit a solid. */
   const blocked = (ax, az, bx, bz, y) => {
+    const { solids, cylinders } = nearBy(ax, az, bx, bz);
     for (const s of solids) {
       if (s.max[1] < y + 0.08 || s.min[1] > y + 0.75) continue;
       // The segment against the box grown by the ball's radius.
@@ -38,6 +76,13 @@ export function createPlanner(map, { drop = 2.2, radius = 0.36 } = {}) {
         return true;
       };
       if (clip(-dx, ax - x0) && clip(dx, x1 - ax) && clip(-dz, az - z0) && clip(dz, z1 - az) && t0 <= t1) return true;
+    }
+    for (const c of cylinders) {
+      if (c.y1 < y + 0.08 || c.y0 > y + 0.75) continue;
+      // The segment's nearest approach to the cylinder's axis, against its radius grown by the ball's.
+      const dx = bx - ax, dz = bz - az, l2 = dx * dx + dz * dz || 1;
+      const t = Math.max(0, Math.min(1, ((c.x - ax) * dx + (c.z - az) * dz) / l2));
+      if (Math.hypot(ax + dx * t - c.x, az + dz * t - c.z) < c.r + R) return true;
     }
     return false;
   };
@@ -71,7 +116,15 @@ export function createPlanner(map, { drop = 2.2, radius = 0.36 } = {}) {
     }
   }
 
+  // Whether it can go from tile (x, z) one step (dx, dz): worked out once a step, the first time it's asked.
+  const known = new Int8Array(cols * rows * 9);
   const step = (x, z, dx, dz) => {
+    if (x < 0 || z < 0 || x >= cols || z >= rows) return false;
+    const k = (z * cols + x) * 9 + (dz + 1) * 3 + dx + 1;
+    if (!known[k]) known[k] = stepOnce(x, z, dx, dz) ? 1 : 2;
+    return known[k] === 1;
+  };
+  const stepOnce = (x, z, dx, dz) => {
     const c = map.cell(x, z), n = map.cell(x + dx, z + dz);
     if (!c || !n) return false;
     if (dx && dz) return step(x, z, dx, 0) && step(x, z, 0, dz) && step(x + dx, z, 0, dz) && step(x, z + dz, dx, 0);

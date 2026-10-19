@@ -1,3 +1,4 @@
+import { ODDS } from './odds.js';
 import { OIL } from './oil.js';
 import { STREET } from './street.js';
 import { VEHICLES } from './vehicles.js';
@@ -10,6 +11,6 @@ export const FAR = 2.2;
 
 /** Every sculpted model, by name; and each vehicle again, coarser, for far off. */
 export const MODELS = Object.fromEntries([
-  ...Object.entries({ ...VEHICLES, ...STREET, ...OIL }).map(([name, def]) => [name, { coarse: COARSE[name] ?? 1, ...def }]),
+  ...Object.entries({ ...VEHICLES, ...STREET, ...OIL, ...ODDS }).map(([name, def]) => [name, { coarse: COARSE[name] ?? 1, ...def }]),
   ...Object.entries(VEHICLES).map(([name, def]) => [`${name}-far`, { ...def, name: `${def.name}-far`, coarse: FAR }]),
 ]);

@@ -40,6 +40,11 @@ export class TownMap {
     this.seeds = [];
     this.golden = [];
     this.pumps = [];
+    this.givers = [];
+    this.critters = [];
+    this.jobs = [];
+    this.knocks = [];
+    this.shops = [];
     this.districts = [];
     this.decks = [];
     this.lamps = [];
@@ -158,7 +163,7 @@ export class TownMap {
     return this;
   }
 
-  /** A prop: something built from plain shapes (see `props.js`). */
+  /** A prop: something built from plain shapes (see `structures.js`). */
   prop(type, x, z, opts = {}) {
     this.props.push({ type, x, z, ...opts });
     return this;
@@ -185,10 +190,11 @@ export class TownMap {
   /**
    * A loop the traffic drives round: tile-centre points in order, `cars`
    * spaced evenly round it at `speed` tiles a second. `kind` is what
-   * drives it: 'car', 'truck' or 'tanker'.
+   * drives it: 'car', 'truck' or 'tanker'. A road `over` a bridge drives
+   * up on its deck.
    */
-  road(points, { cars = 3, speed = 4, kind = 'car', brakes = true, open = false } = {}) {
-    this.roads.push({ points, cars, speed, kind, brakes, open });
+  road(points, { cars = 3, speed = 4, kind = 'car', brakes = true, open = false, over = false } = {}) {
+    this.roads.push({ points, cars, speed, kind, brakes, open, over });
     return this;
   }
 
@@ -225,9 +231,47 @@ export class TownMap {
     return this;
   }
 
-  /** A golden seed: one of the things the whole game is about. `y` sets it on a deck or a lift's top. */
+  /** A golden seed: one of the things to find. `y` sets it on a deck or a lift's top. */
   goldenSeed(name, x, z, { y = null } = {}) {
     this.golden.push({ name, x, z, y });
+    return this;
+  }
+
+  /**
+   * Somebody in town with work going: one of the cast (`look`, see
+   * `cast/`), standing at (x, z), who hands out the jobs that name them
+   * (`job`).
+   */
+  giver(id, name, x, z, { look = 'tourist', y = null, angle = null, line = '' } = {}) {
+    this.givers.push({ id, name, x, z, y, look, angle, line });
+    return this;
+  }
+
+  /** An animal about town (from the cast: a cat, a pigeon, a corgi...), sitting or going about its business. */
+  critter(look, x, z, { y = null, angle = null, clip = null, size = 1 } = {}) {
+    this.critters.push({ look, x, z, y, angle, clip, size });
+    return this;
+  }
+
+  /**
+   * A job: what somebody wants doing, as stages done one after another
+   * (see `jobs.js`), against the clock. `after` is the id of a job that
+   * has to be done first.
+   */
+  job(def) {
+    this.jobs.push({ reward: 100, time: 60, after: null, ...def });
+    return this;
+  }
+
+  /** Something standing about to be knocked flying, for a little cash: a cone, a bin, a flamingo, a crate, a sign. */
+  knock(kind, x, z, { y = null, angle = 0 } = {}) {
+    this.knocks.push({ kind, x, z, y, angle });
+    return this;
+  }
+
+  /** The bubble shop: a pad to roll onto, to spend what the jobs pay. */
+  shop(name, x, z) {
+    this.shops.push({ name, x, z });
     return this;
   }
 
@@ -267,6 +311,13 @@ export class TownMap {
     const u = x - i, w = z - j, h = c.h;
     if (u + w <= 1) return h[H00] + (h[H10] - h[H00]) * u + (h[H01] - h[H00]) * w;
     return h[H11] + (h[H01] - h[H11]) * (1 - u) + (h[H10] - h[H11]) * (1 - w);
+  }
+
+  /** What a car drives on at (x, z): the ground, or a deck over it no higher than `reach` (a road bridge). */
+  roadAt(x, z, reach = 3.5) {
+    let y = this.heightAt(x, z) ?? 0;
+    for (const d of this.decks) if (d.h <= reach && x >= d.x && x <= d.x + d.w && z >= d.z && z <= d.z + d.d) y = Math.max(y, d.h);
+    return y;
   }
 
   /** The top of whatever is under (x, z): the ground, or a deck over it if there is one below `under`. */
