@@ -355,6 +355,9 @@ function downtown(c) {
     return CURB - 0.7 * (1 - smooth(Math.min(1, r)));
   }, { surface: 'pool' });
   c.prop('fountain', 58, 42);
+  // Its basin, and the tier on its column, are stone: rolled round, not through.
+  const font = c.heightAt(58, 42);
+  c.cylinder(58, 42, 0.85, font, font + 0.52).cylinder(58, 42, 0.42, font, font + 1.1);
   c.goldenSeed('In the fountain', 56.4, 42);
   c.place('statue', 52.5, 48.5, { turn: 2 });
   for (const [x, z] of [[53, 36], [63, 36], [53, 48.5], [63, 47]]) c.place('tree', x, z, { scale: 1.05, angle: x });
