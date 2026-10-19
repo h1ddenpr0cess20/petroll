@@ -20,6 +20,8 @@ function yard() {
   m.flat(0, 20, 40, 4, 0, { surface: 'road' });
   m.road([[1, 22], [39, 22]], { cars: 1, speed: 6, open: true, brakes: false });
   m.knock('cone', 3.5, 6.5).knock('flamingo', 3.5, 8.5);
+  m.goldenSeed('Shiny', 2.5, 17.5);
+  m.seedLine(2.5, 10, 2.5, 12, 3);
   m.flat(14, 12, 2, 2, 0.3, { surface: 'trampoline' });
   m.giver('pat', 'Pat', 3.5, 14.5);
   m.job({ id: 'fetch', giver: 'pat', title: 'Fetch', brief: 'Go there.', reward: 50, time: 6, stages: [{ type: 'go', text: 'Go', at: [3.5, 18.5] }] });
@@ -48,6 +50,15 @@ test('knocking things flying pays, and they come back later', () => {
   assert.equal(outs.flatMap((o) => o.knocked).length, 2);
   assert.equal(run.cash, 1 + 3);
   assert.ok(run.knocks.every((k) => k.down > 0));
+});
+
+test('rolling over seeds eats them, and a golden seed is found; found ones stay found', () => {
+  const run = createRun(GFX, { map: yard() });
+  placeBall(run.ball, 2.5, 0.4, 9);
+  const outs = roll(run, 2, [0, 1]);
+  assert.equal(outs.flatMap((o) => o.picked).length, 3);
+  assert.equal(outs.find((o) => o.golden)?.golden.name, 'Shiny');
+  assert.ok(createRun(GFX, { map: yard(), found: ['Shiny'] }).golden[0].got);
 });
 
 test('somebody with work: offered on rolling up, taken on, done against the clock, paid; then the next', () => {

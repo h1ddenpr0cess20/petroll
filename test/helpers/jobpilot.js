@@ -66,7 +66,7 @@ export const HINTS = {
     '1.0': { from: [218, 66.5], via: [v(218, 70, { speed: 2.5, reckless: true }), v(218, 84.5, { speed: 3, reckless: true }), v(218.5, 88, { speed: 2.5 })] },
   },
   pups: {
-    4: { from: [157, 51.4], stop: true, via: [v(157, 47.6, { speed: 5.5, radius: 0.6 }), v(157, 45.2, { speed: 2, air: true })] },
+    4: { from: [158, 21.4], stop: true, via: [v(158, 19.6, { speed: 5.8, radius: 0.6 }), v(158, 13.8, { speed: 2, air: true })] },
   },
 };
 

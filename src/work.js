@@ -9,7 +9,7 @@
  * when it's taken on.
  */
 
-import { BARON, CURB, OVAL, PIPE, PIT } from './town.js';
+import { ACRES_ROOF, BARON, OVAL, PIPE, PIT } from './town.js';
 
 /** Round the speedway's oval, along the middle of the track, starting on the line and going north up the west straight. */
 function lap(step = 4) {
@@ -57,7 +57,7 @@ export function work(c, { P }) {
   c.critter('corgi', 22.5, 19, { angle: 1 });
   c.critter('rat', 57.6, 22.5, { angle: Math.PI });
   c.critter('poodle', 221, 41.5, { y: BARON.top, angle: -0.5 });
-  c.critter('cat-ginger', 165, 36.8, { size: 0.7 });
+  c.critter('cat-ginger', 171.5, 38.6, { size: 0.7 });
   c.critter('cat-black', 102.5, 24, { size: 0.7, clip: 'sleep' });
   c.critter('cat-grey', 127, 19.5, { size: 0.7 });
   c.critter('cat-calico', 124.5, 76, { size: 0.65 });
@@ -169,8 +169,8 @@ export function work(c, { P }) {
   // Crude Acres.
   c.job({
     id: 'pups', giver: 'granny', title: 'Grandpups', reward: 200, time: 80,
-    brief: "My grandpups got out of their cage again. Six of 'em! One's on the Hendersons' roof — use the trampoline.",
-    stages: [{ type: 'grab', kind: 'pup', text: 'Round up the grandpups', points: [[150.5, 16.7], [172.5, 31.2], [185, 37.7], [163, 48.2], [157, 45.2, CURB + 1.6], [188.5, 55.5]] }],
+    brief: "My grandpups got out of their cage again. Six of 'em! One's up on the Hendersons' roof — use the trampoline out front.",
+    stages: [{ type: 'grab', kind: 'pup', text: 'Round up the grandpups', points: [[149, 48.6], [172.5, 37.8], [187.6, 42.5], [165, 43], [158, 13.8, ACRES_ROOF], [188.4, 57.4]] }],
   });
 
   // Baron's Hill.
@@ -220,6 +220,6 @@ export function work(c, { P }) {
   knock('cone', [[73, 47.5], [75, 49.5], [82, 41], [130, 48.5], [135.5, 48.5], [131, 54], [136, 54], [94, 34.5], [94, 36.5], [215, 65.5], [221, 65.5], [208.5, 72], [227.5, 72]]);
   knock('bin', [[10.6, 27.4], [30.6, 27.4], [50.6, 27.4], [70.5, 27.5], [92.6, 33.5], [127.5, 58.5], [146.6, 59.4], [194.6, 59.4], [141, 37], [25.4, 32.6], [50.6, 32.6]]);
   knock('crate', [[127, 26], [127.5, 37.5], [140.5, 37.5], [127, 49], [233, 71], [234.5, 71], [199, 71], [5, 66], [39, 66], [36, 76], [97.5, 31], [109.5, 31]]);
-  knock('flamingo', [[149.2, 16.7], [160, 21.7], [175, 21.7], [183, 30.7], [152, 37.8], [172, 37.8], [180, 48.6], [186, 48.6], [150, 31], [178, 16.7]]);
+  knock('flamingo', [[155.7, 13.2], [164.5, 13.3], [176.8, 13.3], [184.6, 13.5], [162.5, 25], [174.5, 25.2], [162.5, 42.5], [173.5, 42.5], [150.4, 31.5], [187.6, 31.5]]);
   knock('sign', [[196, 57.5], [240, 57.5], [196, 12], [240, 12]]);
 }

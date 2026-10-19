@@ -8,6 +8,9 @@ pumpjacks nodding, and a refinery where the gas flares up out of the floor;
 over the road bridge, east of it, a truck stop, a drive-in, a trailer park,
 the oil baron's hill, a dirt speedway and a quarry.
 
+Somewhere in all of it are **30 golden sunflower seeds**, and sunflower
+seeds lie about in lines for eating.
+
 And the townsfolk have **jobs** going, the way they do in Springfield: roll
 up to anybody with a **!** over their head, hear them out, take it on, and
 beat the clock. Nineteen of them, from a paper round to ramming the tax
@@ -90,6 +93,16 @@ carry breaks, the car you're tailing gets away or the rival wins; then it's
 **try again** (back to where it starts) or forget it. Done, it pays, and the
 next job from the same person comes up.
 
+### Seeds
+
+Sunflower seeds lie about in lines all over town, for eating. The golden
+ones are hidden: up the quarter pipe, in the middle of the maze, on top of
+the derrick, out on the island in the tar pit, on the Hendersons' roof (the
+trampoline out front helps), over the speedway's jump, at the bottom of the
+quarry. The map in the corner shows the golden seeds still to find in each
+part of town you've been to. The golden seeds found, and your best time for
+all of them, are kept with the rest.
+
 ### The bubble shop
 
 On the forecourt of the Gas 'n' Go and at the truck stop: new plastic for
@@ -109,9 +122,9 @@ back to 100 and makes it the place you come back to. A pumpjack's head
 coming down on the ball pops it outright. **Tar** swallows it, and it's put
 back on the last firm ground it crossed.
 
-The jobs done, the cash, what's been bought and the last pump are kept in
-the browser (`petroll.v2`), and the game plays the same with storage
-blocked.
+The golden seeds found, the jobs done, the cash, what's been bought and the
+last pump are kept in the browser (`petroll.v2`; golden seeds found before
+the jobs came carry over), and the game plays the same with storage blocked.
 
 ## Petroleum Springs
 
@@ -130,7 +143,7 @@ Over the interstate, the east side of town, as big again as the west:
 |---|---|
 | **Big Rig Truck Stop** | The diner, rigs parked up in rows to weave between, a kicker ramp off the end of the lot, the other bubble shop. |
 | **The Drive-in** | Rows of cars facing the big screen (tonight: *Attack of the 50 ft Hamster*), and the snack bar with the projector in it. |
-| **Crude Acres** | The trailer park: trailers in rows on gravel lanes, cars on blocks, and trampolines, one of them close enough to a trailer to bounce up onto its roof. |
+| **Crude Acres** | The mobile home park, round a gravel loop: homes with their porches, awnings and cars in the drives, an Airstream or two, the office by the gate; in the middle a common with an above-ground pool, a swing set, a fire pit, the washing out and party lights strung over it; and trampolines, one in front of the Hendersons' for their roof. |
 | **Baron's Hill** | The oil baron's mansion on top of a great round hill, the drive straight up the front, statues, and his poodle. |
 | **Wildcat Speedway** | A dirt oval, banked round the ends and walled outside, a grandstand down the back straight, a jump in the infield. |
 | **The Quarry** | A pit cut down in steps to a sandy floor, the haul road down the north side with the haul truck on it, the crusher and the blasting shed up top. |
@@ -151,6 +164,7 @@ and the plastic, the paint and the puddles all reflect the same sky.
 | `src/town.js` | Petroleum Springs, district by district. |
 | `src/work.js` | Who wants what doing: the townsfolk, their jobs, the bubble shops, the things to knock over. |
 | `src/jobs.js` | The jobs as they run: offers, the count in, the stages, the clock, how they're passed and failed. Nothing drawn. |
+| `src/pickups.js` | The seeds and the golden seeds, as they look. |
 | `src/jobview.js`, `src/shop.js` | The jobs as they look (the townsfolk, beacons, the car to ram, the rival, the arrow), and the shop's wares. |
 | `src/xray.js` | Whether the ball is hidden from the camera, by rays against the town, for the ring drawn where it is when it is. |
 | `src/surfaces.js`, `src/textures.js` | What the ground is made of, how it grips and drags, and how each surface is painted. |
@@ -165,10 +179,18 @@ and the plastic, the paint and the puddles all reflect the same sky.
 |---|---|
 | `npm run dev` | Vite dev server (and `/preview.html`, a turntable for the ball and the hamster: `?tint=f07ab4`, `?speed=4`) |
 | `npm run build` | Bundles to `dist/` |
-| `npm test` | `node:test`: the physics, the map builder, the town, the traffic, the hazards, the rules, the jobs, the x-ray, the hamster, and an autopilot that has to do every job in town against the clock, with time to spare |
+| `npm test` | `node:test`: the physics, the map builder, the town, the traffic, the hazards, the rules, the jobs, the x-ray, the hamster, and two autopilots: one that has to find all 30 golden seeds in one go without the bubble popping, one that has to do every job in town against the clock, with time to spare |
 | `npm run lint` | ESLint |
 
-The autopilot (`test/helpers/jobpilot.js`) takes each job on where its giver
+The golden-seed autopilot (`test/helpers/autopilot.js`, its way round in
+`test/helpers/tour.js`) finds its own way across town and follows set
+waypoints where it has to: up the quarter pipe flat out, off the footbridge
+onto the barrier, across the interstate in a gap in the traffic, along the
+pipeline, under a pumpjack between nods, along the plank, up and down the
+lifts, down flare alley behind the wave, off the trampoline onto the roof,
+down the quarry's haul road and over the speedway's jump.
+
+The jobs autopilot (`test/helpers/jobpilot.js`) takes each job on where its giver
 stands and does it: it finds its own way across town (`test/helpers/plan.js`,
 A* over the tiles, over the bridges), rounds things up nearest first, chases
 the car it has to ram, sits a few tiles behind the one it has to tail, and

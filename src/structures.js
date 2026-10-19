@@ -468,6 +468,177 @@ const DRAW = {
     k.slab(x0 - 0.08, y + p.y + h, z0 - 0.08, x1 + 0.08, y + p.y + h + 0.08, z1 + 0.08, '#8a8f9a');
     map.lamp(p.x + out[0] * 1.2, p.z + out[1] * 1.2, { colour: p.fg ?? '#fff0d0', reach: Math.max(3, w * 0.5), height: p.y + h / 2, y, glow: 0.5 });
   },
+  mobilehome(k, t, p, y, map) {
+    // A home in a frame of its own: `len` along `along`, `wid` across, the door and the porch on side `front`.
+    const { x, z, len: L, wid: D, along, front, colour = '#e8e4dc', trim = '#2c6ec8', kind = 'single', porch = true, dish = false } = p;
+    const alongX = along === 'x';
+    const far = front === 's' || front === 'e';
+    // (u, v) in the home's own frame — u along it, v back from the front face (negative: out in front) — to the map.
+    const at = (u, v) => {
+      const across = far ? (alongX ? z : x) + D - v : (alongX ? z : x) + v;
+      return alongX ? [x + u, across] : [across, z + u];
+    };
+    const box = (u0, v0, u1, v1, y0, y1, colour2, opts) => {
+      const [ax, az] = at(u0, v0), [bx, bz] = at(u1, v1);
+      k.slab(Math.min(ax, bx), y0, Math.min(az, bz), Math.max(ax, bx), y1, Math.max(az, bz), colour2, opts);
+    };
+    const lay = alongX ? [0, 0, Math.PI / 2] : [Math.PI / 2, 0, 0];
+    const pt = (u, v, h) => { const [px, pz] = at(u, v); return [px, h, pz]; };
+    const outward = far ? 1 : -1;
+    if (kind === 'airstream') {
+      // A silver capsule on two wheels: a long drum, rounded ends, a band of windows, a door.
+      const r = Math.min(0.85, D / 2), cy = y + 0.25 + r;
+      k.cyl(pt(L / 2, D / 2, cy), r, L - r * 1.2, '#d4d8de', { rot: lay, finish: 'shiny', segments: 24 });
+      for (const u of [r * 0.6, L - r * 0.6]) k.sphere(pt(u, D / 2, cy), r, '#d4d8de', { finish: 'shiny', scale: alongX ? [0.75, 1, 1] : [1, 1, 0.75], segments: 20 });
+      for (const v of [D / 2 - r + 0.02, D / 2 + r - 0.02]) box(0.9, v - 0.02, L - 0.9, v + 0.02, cy + 0.15, cy + 0.45, '#2a3a4a', { finish: 'glass' });
+      box(L * 0.55, D / 2 - r - 0.02, L * 0.55 + 0.6, D / 2 - r + 0.04, y + 0.35, cy + 0.5, '#b8bec6', { finish: 'shiny' });
+      box(L * 0.55 - 0.05, D / 2 - r - 0.6, L * 0.55 + 0.65, D / 2 - r, y + 0.08, y + 0.16, '#8a8f9a');
+      for (const v of [D / 2 - r + 0.1, D / 2 + r - 0.1]) k.cyl(pt(L * 0.45, v, y + 0.25), 0.25, 0.14, '#1c1b1f', { rot: alongX ? [Math.PI / 2, 0, 0] : [0, 0, Math.PI / 2], segments: 14 });
+      k.beam(pt(0.2, D / 2, y + 0.4), pt(-0.7, D / 2, y + 0.35), 0.05, '#3a3d44');
+      map.lamp(...at(L * 0.55 + 0.3, -0.8), { colour: '#ffd890', reach: 3, height: 1.4, y, glow: 0.6 });
+      return;
+    }
+    // Skirting round the bottom, slatted.
+    box(0.12, 0.1, L - 0.12, D - 0.1, y, y + 0.32, '#7a7062');
+    for (let u = 0.3; u < L - 0.2; u += 0.35) box(u - 0.03, -0.0, u + 0.03, 0.12, y + 0.02, y + 0.3, '#5a5248');
+    // The body, in siding; a band of trim round it; the roof, a low ridge along it.
+    const [x0, z0] = at(0, 0), [x1, z1] = at(L, D);
+    t.box('clapboard', Math.min(x0, x1), y + 0.3, Math.min(z0, z1), Math.max(x0, x1), y + 1.7, Math.max(z0, z1), colour, { top: false, band: 1.4 });
+    box(-0.02, -0.02, L + 0.02, D + 0.02, y + 0.92, y + 1.0, trim);
+    box(-0.08, -0.08, L + 0.08, D + 0.08, y + 1.7, y + 1.78, '#c8c6c0', { finish: 'shiny' });
+    box(0.05, D / 2 - 0.55, L - 0.05, D / 2 + 0.55, y + 1.78, y + 1.86, '#b8b6b0', { finish: 'shiny' });
+    // Windows, front and back, some lit; shutters.
+    const lit = (i) => ((x * 7 + z * 3 + i * 5) % 3) < 2;
+    [0.9, 2.1, 4.4, 5.5].filter((u) => u < L - 0.4).forEach((u, i) => {
+      for (const [v0, v1] of [[-0.03, 0.01], [D - 0.01, D + 0.03]]) {
+        box(u - 0.32, v0, u + 0.32, v1, y + 1.06, y + 1.5, lit(i + v0) ? '#ffd890' : '#2a3a4a', { finish: lit(i + v0) ? 'glow' : 'glass' });
+        for (const s2 of [-1, 1]) box(u + s2 * 0.36 - 0.05, v0 - 0.01, u + s2 * 0.36 + 0.05, v1 + 0.01, y + 1.04, y + 1.52, trim);
+      }
+    });
+    // The door, and the porch in front of it: a deck on posts, steps, a rail, an awning striped like a deckchair.
+    const du = Math.min(3.0, L - 1.2);
+    box(du, -0.04, du + 0.75, 0, y + 0.34, y + 1.6, '#f0ece2');
+    box(du + 0.6, -0.07, du + 0.66, -0.03, y + 0.92, y + 0.98, '#c8a040', { finish: 'shiny' });
+    if (porch) {
+      const p0 = du - 0.7, p1 = du + 1.45;
+      box(p0, -1.3, p1, 0, y + 0.26, y + 0.34, '#9a7448');
+      for (const u of [p0 + 0.08, p1 - 0.08]) for (const v of [-1.22, -0.1]) box(u - 0.05, v - 0.05, u + 0.05, v + 0.05, y, y + 0.26, '#7a5a38');
+      box(du + 0.05, -1.6, du + 0.75, -1.3, y + 0.1, y + 0.18, '#9a7448');
+      for (const u of [p0 + 0.05, p1 - 0.05]) box(u - 0.03, -1.27, u + 0.03, -1.21, y + 0.34, y + 0.8, '#e8e2d6');
+      box(p0, -1.27, du, -1.21, y + 0.76, y + 0.82, '#e8e2d6');
+      box(du + 0.8, -1.27, p1, -1.21, y + 0.76, y + 0.82, '#e8e2d6');
+      for (let u = p0 - 0.1, i = 0; u < p1 + 0.1; u += 0.3, i++) box(u, -1.45, Math.min(u + 0.3, p1 + 0.1), 0.02, y + 1.62, y + 1.66, i % 2 ? '#f4f1ea' : trim);
+      for (const u of [p0 - 0.05, p1 + 0.05]) box(u - 0.025, -1.42, u + 0.025, -1.37, y + 0.34, y + 1.62, '#c8ccd2', { finish: 'shiny' });
+      map.lamp(...at(du + 0.4, -0.6), { colour: '#ffc870', reach: 3.2, height: 1.4, y, glow: 0.7 });
+    }
+    // The hitch and the propane at one end; an air conditioner and an aerial on the roof; a dish, maybe.
+    k.beam(pt(0, D * 0.3, y + 0.35), pt(-0.9, D / 2, y + 0.3), 0.04, '#3a3d44');
+    k.beam(pt(0, D * 0.7, y + 0.35), pt(-0.9, D / 2, y + 0.3), 0.04, '#3a3d44');
+    for (const v of [D / 2 - 0.22, D / 2 + 0.22]) {
+      k.cyl(pt(-0.45, v, y + 0.4), 0.17, 0.55, '#ecebe6', { finish: 'shiny', segments: 12 });
+      k.sphere(pt(-0.45, v, y + 0.68), 0.17, '#ecebe6', { finish: 'shiny', scale: [1, 0.5, 1] });
+    }
+    box(L * 0.68, D / 2 - 0.3, L * 0.68 + 0.55, D / 2 + 0.3, y + 1.86, y + 2.2, '#9aa0a8', { finish: 'shiny' });
+    k.cyl(pt(L * 0.68 + 0.27, D / 2, y + 2.21), 0.2, 0.02, '#3a3d44', { segments: 12 });
+    k.beam(pt(1, D / 2, y + 1.86), pt(1, D / 2, y + 2.9), 0.02, '#8a8f9a');
+    for (const h of [2.5, 2.75]) k.beam(pt(0.6, D / 2, y + h), pt(1.4, D / 2, y + h), 0.012, '#8a8f9a');
+    if (dish) {
+      k.sphere(pt(L - 0.8, 0.5, y + 2.15), 0.32, '#e8e8e4', { scale: [1, 1, 0.35], rot: [0.6, 0.4, 0] });
+      k.beam(pt(L - 0.8, 0.6, y + 1.86), pt(L - 0.8, 0.55, y + 2.1), 0.025, '#8a8f9a');
+    }
+    void outward;
+  },
+
+  agpool(k, t, p, y) {
+    // An above-ground pool: a blue wall with a white rim, water inside, a ladder over the side.
+    const { x, z, r } = p;
+    k.cyl([x, y + 0.55, z], r, 1.1, '#3a7ac8', { segments: 32 });
+    k.torus([x, y + 1.1, z], r, 0.06, '#f0eeea', { rot: [Math.PI / 2, 0, 0], segments: 40 });
+    k.cyl([x, y + 1.02, z], r - 0.06, 0.02, '#5ac8e8', { finish: 'glass', segments: 32 });
+    for (let i = 0; i < 12; i++) {
+      const a = (i / 12) * TAU;
+      k.cyl([x + Math.cos(a) * r, y + 0.55, z + Math.sin(a) * r], 0.04, 1.1, '#e8e6e0', { segments: 6 });
+    }
+    k.beam([x + r + 0.35, y, z - 0.25], [x + r - 0.05, y + 1.3, z - 0.25], 0.025, '#c8ccd2', { finish: 'shiny' });
+    k.beam([x + r + 0.35, y, z + 0.25], [x + r - 0.05, y + 1.3, z + 0.25], 0.025, '#c8ccd2', { finish: 'shiny' });
+    for (let h = 0.25; h < 1.2; h += 0.3) k.beam([x + r + 0.35 - h * 0.3, y + h, z - 0.25], [x + r + 0.35 - h * 0.3, y + h, z + 0.25], 0.02, '#c8ccd2');
+  },
+
+  swings(k, t, p, y) {
+    // A swing set: two A-frames, a bar, two swings on chains.
+    const { x, z, w = 3 } = p;
+    for (const s2 of [0, w]) {
+      k.beam([x + s2, y, z - 0.6], [x + s2, y + 1.8, z], 0.05, RED, { finish: 'shiny' });
+      k.beam([x + s2, y, z + 0.6], [x + s2, y + 1.8, z], 0.05, RED, { finish: 'shiny' });
+    }
+    k.cyl([x + w / 2, y + 1.8, z], 0.05, w, YELLOW, { rot: [0, 0, Math.PI / 2], finish: 'shiny' });
+    for (const s2 of [w * 0.3, w * 0.7]) {
+      for (const dz of [-0.15, 0.15]) k.beam([x + s2, y + 1.8, z + dz], [x + s2, y + 0.45, z + dz], 0.008, '#8a8f9a');
+      k.slab(x + s2 - 0.2, y + 0.42, z - 0.17, x + s2 + 0.2, y + 0.46, z + 0.17, '#1c1b1f');
+    }
+  },
+
+  laundry(k, t, p, y) {
+    // A washing line between two posts, the washing pegged out on it.
+    const { x, z, x1 } = p;
+    for (const px of [x, x1]) {
+      k.cyl([px, y + 0.85, z], 0.04, 1.7, '#8a8f9a', { segments: 6 });
+      k.beam([px, y + 1.65, z - 0.3], [px, y + 1.65, z + 0.3], 0.02, '#8a8f9a');
+    }
+    for (const dz of [-0.25, 0.25]) k.beam([x, y + 1.63, z + dz], [x1, y + 1.58, z + dz], 0.006, '#e8e6e0');
+    const cloth = ['#f4f1ea', '#c8382c', '#2c6ec8', '#f2c230', '#62d07a', '#f07ab4', '#e8e2d6'];
+    let i = 0;
+    for (let px = x + 0.4; px < x1 - 0.3; px += 0.55, i++) {
+      const dz = i % 2 ? 0.25 : -0.25, big = (i * 7) % 3 === 0;
+      k.slab(px - (big ? 0.24 : 0.15), y + 1.6 - (big ? 0.55 : 0.32), z + dz - 0.01, px + (big ? 0.24 : 0.15), y + 1.6, z + dz + 0.01, cloth[(i * 3) % cloth.length]);
+    }
+  },
+
+  picnic(k, t, p, y) {
+    // A picnic table, benches either side, a checked cloth.
+    const { x, z } = p;
+    k.slab(x - 0.6, y + 0.68, z - 0.35, x + 0.6, y + 0.74, z + 0.35, '#9a7448');
+    k.slab(x - 0.45, y + 0.745, z - 0.3, x + 0.45, y + 0.75, z + 0.3, '#c8382c');
+    for (const dz of [-0.55, 0.55]) k.slab(x - 0.6, y + 0.4, z + dz - 0.12, x + 0.6, y + 0.45, z + dz + 0.12, '#9a7448');
+    for (const dx of [-0.45, 0.45]) {
+      k.beam([x + dx, y, z - 0.6], [x + dx, y + 0.7, z], 0.04, '#7a5a38');
+      k.beam([x + dx, y, z + 0.6], [x + dx, y + 0.7, z], 0.04, '#7a5a38');
+    }
+  },
+
+  firepit(k, t, p, y, map) {
+    // A ring of stones, logs, embers, and chairs round it.
+    const { x, z } = p;
+    for (let i = 0; i < 10; i++) {
+      const a = (i / 10) * TAU;
+      k.sphere([x + Math.cos(a) * 0.45, y + 0.08, z + Math.sin(a) * 0.45], 0.13, '#8a8278', { scale: [1, 0.7, 1] });
+    }
+    for (const a of [0.3, 1.9, 3.5]) k.beam([x + Math.cos(a) * 0.3, y + 0.05, z + Math.sin(a) * 0.3], [x - Math.cos(a) * 0.1, y + 0.25, z - Math.sin(a) * 0.1], 0.05, '#5a3a22');
+    k.sphere([x, y + 0.1, z], 0.22, '#ff8a2a', { finish: 'glow', scale: [1, 0.5, 1] });
+    for (const a of [0.6, 2.4, 4.4]) {
+      const cx = x + Math.cos(a) * 1.2, cz = z + Math.sin(a) * 1.2;
+      k.slab(cx - 0.22, y + 0.3, cz - 0.22, cx + 0.22, y + 0.34, cz + 0.22, ['#2c6ec8', '#3a8a4a', '#c8382c'][Math.round(a) % 3]);
+      k.beam([cx, y, cz], [cx, y + 0.3, cz], 0.02, '#8a8f9a');
+    }
+    map.lamp(x, z, { colour: '#ff9a3a', reach: 3.5, height: 0.6, y, glow: 0.9 });
+  },
+
+  stringlights(k, t, p, y, map) {
+    // Party lights strung on poles: a line of coloured bulbs sagging between them.
+    const { points, h = 2.2 } = p;
+    const bulbs = ['#ffd890', '#ff8a6a', '#8ad8ff', '#a8ff9a', '#ffa8e8'];
+    points.forEach(([px, pz], i) => {
+      k.cyl([px, y + h / 2, pz], 0.04, h, '#6a5a48', { segments: 6 });
+      const next = points[i + 1];
+      if (!next) return;
+      const L = Math.hypot(next[0] - px, next[1] - pz), n = Math.max(2, Math.round(L / 0.5));
+      for (let j = 1; j < n; j++) {
+        const f = j / n, sag = Math.sin(f * Math.PI) * 0.35;
+        k.sphere([px + (next[0] - px) * f, y + h - 0.05 - sag, pz + (next[1] - pz) * f], 0.05, bulbs[(i + j) % bulbs.length], { finish: 'glow', segments: 8 });
+      }
+      map.lamp((px + next[0]) / 2, (pz + next[1]) / 2, { colour: '#ffd0a0', reach: Math.max(3, L * 0.55), height: h - 0.4, y, glow: 0.45 });
+    });
+  },
 };
 
 /** Words for the structures that carry them. */
@@ -583,7 +754,7 @@ export function structureLights(map) {
   const dummy = { slab() {}, box() {}, cyl() {}, cone() {}, sphere() {}, torus() {}, beam() {}, get empty() { return true; } };
   const t = { cylinder() {}, face() {}, box() {} };
   for (const p of map.props) {
-    if (!['canopy', 'billboard', 'tank', 'stack', 'marquee'].includes(p.type)) continue;
+    if (!['canopy', 'billboard', 'tank', 'stack', 'marquee', 'mobilehome', 'firepit', 'stringlights'].includes(p.type)) continue;
     const y = p.y ?? map.heightAt(p.x, p.z) ?? 0;
     DRAW[p.type](dummy, t, p, y, map, dummy);
   }

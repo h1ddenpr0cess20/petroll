@@ -2,6 +2,7 @@ import { createEffects } from './effects.js';
 import { createPlayer } from './hamster.js';
 import { COUNTDOWN, nextJob, objective, quitJob, startJob } from './jobs.js';
 import { createJobView } from './jobview.js';
+import { createPickups } from './pickups.js';
 import { rollSpin, turn } from './physics.js';
 import { createRun, putBack, respawn, STEP, stepRun, toGround } from './run.js';
 import { createWorldMeshes } from './scenery.js';
@@ -10,7 +11,8 @@ import { HOME } from './view.js';
 import { hiddenShare } from './xray.js';
 
 /**
- * The game: one town, all of it open from the start, and the townsfolk
+ * The game: one town, all of it open from the start, golden seeds hidden
+ * all over it and sunflower seeds lying about in lines, and the townsfolk
  * with jobs going — roll up to anybody with a "!" over their head, take
  * the job on, beat the clock. The jobs pay; so does knocking things over;
  * the bubble shop takes it. Pop the bubble and the hamster is back at the
@@ -42,13 +44,14 @@ export function createGame({ stage, hud, input, audio, storage }) {
   const xray = createXray(GFX);
   scene.add(xray.sprite);
 
-  const fresh = () => createRun(GFX, { done: saved.done, cash: saved.cash, perks: perksOf(saved.owned), ...(run ? { ball: run.ball, map: run.map } : {}) });
+  const fresh = () => createRun(GFX, { found: saved.found, done: saved.done, cash: saved.cash, perks: perksOf(saved.owned), ...(run ? { ball: run.ball, map: run.map } : {}) });
   let run = null;
   run = fresh();
   const world = createWorldMeshes(GFX, run.map, run.built);
   scene.add(world, run.traffic.group, run.hazards.group);
   let jobs = createJobView(GFX, run);
-  scene.add(jobs.group);
+  let pickups = createPickups(GFX, run);
+  scene.add(jobs.group, pickups.group);
   effects.setCourse(run.map);
   hud.setMap(run.map);
 
@@ -60,7 +63,8 @@ export function createGame({ stage, hud, input, audio, storage }) {
   let accumulator = 0;
   let lostHow = null;
   let elapsed = saved.time;
-  let streak = 0, streakTimer = 0;
+  let seedsEaten = 0;
+  let streak = 0, streakTimer = 0, seedStreak = 0, seedTimer = 0;
   let saveTimer = 0;
   let heading = 0;
   let playZoom = HOME.zoom;
@@ -70,6 +74,7 @@ export function createGame({ stage, hud, input, audio, storage }) {
   const seen = new Set();
 
   const total = () => run.board.jobs.length;
+  const found = () => run.golden.filter((g) => g.got).length;
   const done = () => run.board.done.size;
 
   // The town's lamps, where their light comes from; the nearest few light the hamster for real.
@@ -109,11 +114,13 @@ export function createGame({ stage, hud, input, audio, storage }) {
       saved = storage.clear();
       if (tintOf(saved.tint) !== tint) wear(saved.tint);
     }
-    scene.remove(run.traffic.group, run.hazards.group, jobs.group);
+    scene.remove(run.traffic.group, run.hazards.group, jobs.group, pickups.group);
     run = fresh();
     scene.add(run.traffic.group, run.hazards.group);
     jobs = createJobView(GFX, run);
-    scene.add(jobs.group);
+    pickups = createPickups(GFX, run);
+    scene.add(jobs.group, pickups.group);
+    seedsEaten = 0;
     const pump = run.pumps.find((p) => p.name === saved.pump);
     if (pump) { run.checkpoint = pump; respawn(run); }
     elapsed = saved.time;
@@ -129,7 +136,7 @@ export function createGame({ stage, hud, input, audio, storage }) {
     hud.paused(false);
     view.aim.zoom = TITLE_ZOOM;
     audio.stopMusic();
-    hud.title(saved, { done: done(), total: total() });
+    hud.title(saved, { done: done(), total: total(), found: found(), golden: run.golden.length });
   }
 
   function start({ clear = false } = {}) {
@@ -140,6 +147,8 @@ export function createGame({ stage, hud, input, audio, storage }) {
     hud.bubble(run.bubble);
     hud.cash(run.cash);
     hud.jobs(done(), total());
+    hud.gold(found(), run.golden.length);
+    hud.seeds(seedsEaten);
     hud.job(null);
     hud.offer(null);
     hud.failed(null);
@@ -149,7 +158,7 @@ export function createGame({ stage, hud, input, audio, storage }) {
   }
 
   function save() {
-    saved = storage.progress({ done: [...run.board.done], cash: run.cash, pump: run.checkpoint?.name ?? null, time: elapsed });
+    saved = storage.progress({ found: run.golden.filter((g) => g.got).map((g) => g.name), done: [...run.board.done], cash: run.cash, pump: run.checkpoint?.name ?? null, time: elapsed });
   }
 
   /** Take `job` on: off to where it starts, the bubble topped up, the count in. */
@@ -278,6 +287,29 @@ export function createGame({ stage, hud, input, audio, storage }) {
     if (out.knocked.length) {
       jobs.knocked(out.knocked);
       audio.thwack();
+    }
+    for (const sd of out.picked) {
+      seedsEaten++;
+      pickups.eaten(sd);
+      effects.chaff(sd.x, sd.y, sd.z);
+      audio.seed(seedStreak++);
+      seedTimer = 0.6;
+      hud.seeds(seedsEaten);
+    }
+    if (out.golden) {
+      const n = found();
+      effects.confetti(out.golden.x, out.golden.y, out.golden.z);
+      audio.golden();
+      hud.gold(n, run.golden.length);
+      if (n === run.golden.length) {
+        saved = storage.finished(elapsed);
+        hud.banner(`EVERY GOLDEN SEED!\n${Math.floor(elapsed / 60)}:${String(Math.floor(elapsed % 60)).padStart(2, '0')}`, 'gold');
+      } else {
+        hud.banner('GOLDEN SEED!', 'gold');
+        hud.toast(`★ ${out.golden.name} · ${n} of ${run.golden.length}`, 3.5);
+      }
+      timer = -1;
+      save();
     }
     if (out.cash) {
       hud.cash(run.cash, true);
@@ -440,6 +472,8 @@ export function createGame({ stage, hud, input, audio, storage }) {
     }
     streakTimer -= dt;
     if (streakTimer <= 0) streak = 0;
+    seedTimer -= dt;
+    if (seedTimer <= 0) seedStreak = 0;
 
     // The job under way, on the screen.
     if (a && state !== 'title') {
@@ -484,6 +518,7 @@ export function createGame({ stage, hud, input, audio, storage }) {
     run.traffic.sync(stage.target);
     run.hazards.sync(dt, run.time);
     jobs.sync(dt, run.time);
+    pickups.sync(dt, run.time);
     effects.update(dt);
     audio.rolling(state === 'play' && b.grounded ? speed : 0, b.grounded);
     if (state !== 'title') {
@@ -492,7 +527,7 @@ export function createGame({ stage, hud, input, audio, storage }) {
         ball: b, yaw: view.yaw, cars: run.traffic.cars, pumps: run.pumps, shops: a ? [] : run.map.shops,
         givers: a ? [] : run.board.givers.filter((g) => nextJob(run.board, g)),
         goal, goals: a && (a.job.stages[a.stage].type === 'knock' || a.job.stages[a.stage].type === 'grab') ? a.targets.filter((t) => !t.got) : [],
-        mover: a?.mover ?? null, rival: a?.rival ?? null,
+        mover: a?.mover ?? null, rival: a?.rival ?? null, golden: run.golden, seen,
       });
     }
 

@@ -188,6 +188,17 @@ export function createAudio() {
       tone({ freq: 110, to: 60, length: 0.3, gain: 0.35 });
     },
 
+    /** A seed: a little pluck, higher for each one in a row. */
+    seed(run = 0) {
+      tone({ freq: NOTE(79 + ([0, 2, 4, 7, 9, 12][run % 6])), length: 0.12, type: 'triangle', gain: 0.16 });
+    },
+
+    /** A golden seed. */
+    golden() {
+      [67, 71, 74, 79, 83, 86].forEach((n, i) => tone({ at: i * 0.07, freq: NOTE(n), length: i === 5 ? 0.7 : 0.18, type: 'square', gain: 0.1 }));
+      [55, 59, 62, 67].forEach((n, i) => tone({ at: i * 0.14, freq: NOTE(n), length: 0.4, type: 'triangle', gain: 0.2 }));
+    },
+
     /** Loose change: a coin's ching, higher for each in a row. */
     coin(run = 0) {
       const n = 84 + [0, 2, 4, 7, 9, 12][run % 6];
@@ -217,10 +228,10 @@ export function createAudio() {
       tone({ freq: 1600, length: 0.03, type: 'square', gain: 0.05 });
     },
 
-    /** A job done: the fanfare. */
+    /** A job done: the fanfare, brassier. */
     fanfare() {
-      [67, 71, 74, 79, 83, 86].forEach((n, i) => tone({ at: i * 0.07, freq: NOTE(n), length: i === 5 ? 0.7 : 0.18, type: 'square', gain: 0.1 }));
-      [55, 59, 62, 67].forEach((n, i) => tone({ at: i * 0.14, freq: NOTE(n), length: 0.4, type: 'triangle', gain: 0.2 }));
+      [60, 64, 67, 72, 67, 72].forEach((n, i) => tone({ at: i * 0.1, freq: NOTE(n), length: i === 5 ? 0.8 : 0.14, type: 'sawtooth', gain: 0.06 }));
+      [48, 55, 60].forEach((n, i) => tone({ at: i * 0.2, freq: NOTE(n), length: 0.5, type: 'triangle', gain: 0.2 }));
     },
 
     /** A job failed: the sad trombone. */

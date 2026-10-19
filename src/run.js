@@ -12,7 +12,8 @@ import { groundAxes } from './view.js';
  * The world as it runs, with nothing drawn or heard: the town, the traffic,
  * the things that move, the hamster's ball, and the rules — how the bubble
  * gets knocked about and cracked, what pops it, where it comes back to,
- * what it knocks flying, the jobs (`jobs.js`) and what they pay. The game
+ * what it picks up (sunflower seeds, golden seeds) and knocks flying, the
+ * jobs (`jobs.js`) and what they pay. The game
  * draws and plays it; the tests drive it.
  *
  * The bubble has 100 to start with. Hard landings, cars, drums and the
@@ -32,8 +33,8 @@ export const BUBBLE = 100;
 /** How hard a landing has to be to hurt, and how much each kind of knock costs. */
 export const HURT = Object.freeze({ landing: 9.5, car: 2.6, drum: 3.2, flare: 34 });
 
-/** How close to an air pump's pad counts as on it, from the middle of the ball. */
-const PUMP_REACH = 0.95;
+/** How close counts as picking something up (or being on an air pump's pad), from the middle of the ball. */
+const REACH = { seed: 0.55, golden: 0.75, pump: 0.95 };
 
 /** The highest step the hamster scrambles up from a standstill (a kerb is 0.15). */
 const STEP_UP = 0.22;
@@ -57,18 +58,20 @@ export function toGround({ x, y }, yaw) {
   return [x * right[0] + y * up[0], x * right[1] + y * up[1]];
 }
 
-export function createRun(GFX, { ball = createBall({ r: RADIUS }), map = createTown(), done = [], cash = 0, perks = [] } = {}) {
+export function createRun(GFX, { ball = createBall({ r: RADIUS }), map = createTown(), found = [], done = [], cash = 0, perks = [] } = {}) {
   const built = buildMap(map);
   const killY = -DEPTH - 2;
   const traffic = createTraffic(GFX, map, built.world);
   const hazards = createHazards(GFX, map, built.world, { killY });
   const { x, z } = map.start;
   const start = [x + 0.5, map.heightAt(x + 0.5, z + 0.5) + ball.r, z + 0.5];
+  const seeds = map.seeds.map((s) => ({ ...s, y: (s.y ?? map.heightAt(s.x, s.z) ?? 0) + 0.32, got: false }));
+  const golden = map.golden.map((g) => ({ ...g, y: (g.y ?? map.heightAt(g.x, g.z) ?? 0) + 0.42, got: found.includes(g.name) }));
   const knocks = map.knocks.map((k) => ({ ...k, y: k.y ?? map.heightAt(k.x, k.z) ?? 0, down: 0, vx: 0, vz: 0 }));
   const pumps = map.pumps.map((p) => ({ ...p, y: map.heightAt(p.x, p.z) ?? 0 }));
   const run = {
     map, built, world: built.world, traffic, hazards, killY, ball, time: 0,
-    knocks, pumps,
+    seeds, golden, knocks, pumps,
     board: createBoard(map, { done }),
     cash,
     perks: new Set(perks),
@@ -121,8 +124,8 @@ export function under(run) {
  * One step of everything. `push` is along the ground ([x, z]). While
  * `live`, the rules apply, the drums chase and the jobs run; while
  * `moving` is false the ball stays where it is. Returns what happened: how
- * hard it hit anything, the knocks and what they cost, what it knocked
- * flying, the pump it topped up at, `job` (see `stepJobs`), and `outcome`
+ * hard it hit anything, the knocks and what they cost, the seeds it ate
+ * and the golden seed it found, what it knocked flying, the pump it topped up at, `job` (see `stepJobs`), and `outcome`
  * — null, or 'popped', 'squashed' or 'sunk'.
  */
 export function stepRun(run, push, dt = STEP, { live = true, moving = true } = {}) {
@@ -131,7 +134,7 @@ export function stepRun(run, push, dt = STEP, { live = true, moving = true } = {
   run.hazards.place(run.time, dt);
   const honks = run.traffic.step(dt, live && moving ? ball : null);
   const events = run.hazards.step(dt, run.time, live && moving ? ball : null);
-  const out = { impact: 0, hurt: 0, hits: [], honks, knocked: [], cash: 0, pumped: null, district: null, outcome: null, surface: null, hopped: false, dashed: false, bounced: false, job: null };
+  const out = { impact: 0, hurt: 0, hits: [], honks, picked: [], golden: null, knocked: [], cash: 0, pumped: null, district: null, outcome: null, surface: null, hopped: false, dashed: false, bounced: false, job: null };
   const act = run.act;
   if (!moving) { act.hop = act.dash = false; return out; }
   // Held for the count in to a job.
@@ -256,7 +259,15 @@ export function stepRun(run, push, dt = STEP, { live = true, moving = true } = {
     if (run.map.isSafe(cx, cz)) run.safe = [cx + 0.5, cell.h[0] + ball.r, cz + 0.5];
   }
 
-  // Things to knock flying, air pumps.
+  // Seeds, golden seeds, things to knock flying, air pumps.
+  for (const s of run.seeds) {
+    if (s.got || Math.abs(s.x - ball.x) > 1 || Math.abs(s.z - ball.z) > 1) continue;
+    if (Math.hypot(s.x - ball.x, s.y - ball.y, s.z - ball.z) < REACH.seed) { s.got = true; out.picked.push(s); }
+  }
+  for (const g of run.golden) {
+    if (g.got || Math.abs(g.x - ball.x) > 1.5 || Math.abs(g.z - ball.z) > 1.5) continue;
+    if (Math.hypot(g.x - ball.x, g.y - ball.y, g.z - ball.z) < REACH.golden) { g.got = true; out.golden = g; }
+  }
   for (const k of run.knocks) {
     if (k.down > 0) {
       k.down -= dt;
@@ -275,7 +286,7 @@ export function stepRun(run, push, dt = STEP, { live = true, moving = true } = {
     }
   }
   for (const p of run.pumps) {
-    if (Math.hypot(p.x - ball.x, p.z - ball.z) < PUMP_REACH && Math.abs(ball.y - ball.r - p.y) < 0.6) {
+    if (Math.hypot(p.x - ball.x, p.z - ball.z) < REACH.pump && Math.abs(ball.y - ball.r - p.y) < 0.6) {
       if (run.checkpoint !== p || run.bubble < BUBBLE) out.pumped = p;
       run.checkpoint = p;
       run.bubble = BUBBLE;

@@ -3,8 +3,8 @@ import { grainy } from '../sculpt/skins.js';
 /**
  * The gas station's and the oil field's machinery, sculpted: the pumps and
  * the air pump, the pumpjack (its frame standing still, its walking beam
- * and horsehead nodding), oil drums, a wellhead, a flare vent. Same
- * conventions as `street.js`.
+ * and horsehead nodding), oil drums, a wellhead, a flare vent; and the
+ * seeds there are to find. Same conventions as `street.js`.
  */
 
 const PAINT = { roughness: 0.42, metalness: 0.2, clearcoat: 0.5, clearcoatRoughness: 0.15 };
@@ -135,4 +135,26 @@ export const vent = {
   },
 };
 
-export const OIL = { gaspump, airpump, pumpframe, pumpbeam, drum, vent };
+/** A sunflower seed's shape: plump at the back, drawn to a point at the front (+z), a little flattened, its stripes running end to end. */
+function sunflower(s, k, body, mat, stripe) {
+  s.ellipsoid([0, 0, -0.025 * k], [0.05 * k, 0.03 * k, 0.065 * k], { color: body, mat, k: 0.03 * k });
+  s.ellipsoid([0, 0, 0.04 * k], [0.03 * k, 0.02 * k, 0.05 * k], { color: body, mat, k: 0.03 * k });
+  s.sphere([0, 0, 0.085 * k], 0.008 * k, { color: body, mat, k: 0.02 * k });
+  s.paint((p) => Math.abs(Math.abs(p[0]) - 0.02 * k) - 0.006 * k, stripe, 0.004 * k);
+}
+
+/** A sunflower seed: grey-black with cream stripes from end to end. */
+export const seed = {
+  name: 'seed', cell: 0.009,
+  materials: { husk: { roughness: 0.45, clearcoat: 0.5 } },
+  sculpt(s) { sunflower(s, 1, '#4a423a', 'husk', '#f4ead4'); },
+};
+
+/** A golden seed: the same, big, gold and shining. */
+export const goldseed = {
+  name: 'goldseed', cell: 0.014,
+  materials: { gold: { roughness: 0.16, metalness: 1, clearcoat: 1, emissive: '#7a4a08', emissiveIntensity: 0.6 } },
+  sculpt(s) { sunflower(s, 2.6, '#f0c040', 'gold', '#fff0b0'); },
+};
+
+export const OIL = { gaspump, airpump, pumpframe, pumpbeam, drum, vent, seed, goldseed };

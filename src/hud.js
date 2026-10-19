@@ -2,8 +2,9 @@ import { SURFACES } from './surfaces.js';
 import { groundAxes } from './view.js';
 
 /**
- * Everything on screen that isn't the 3D view: where it is, the cash, the
- * bubble's meter and the dash's, and the jobs done along the top; the job
+ * Everything on screen that isn't the 3D view: where it is, the golden
+ * seeds found and the cash, the bubble's meter and the dash's, the seeds
+ * eaten and the jobs done along the top; the job
  * under way, its clock and how it's going, at the side; the offer of a job
  * at the bottom; what failed and the bubble shop in the middle; the big
  * messages; the map in the corner, turned with the camera so up on it is
@@ -16,6 +17,8 @@ export function createHud(root, { onStart, onNew, onTake, onRetry, onLeave, onCh
   const placeEl = $('place');
   const cashEl = $('cash');
   const jobsEl = $('jobs');
+  const goldEl = $('gold');
+  const seedsEl = $('seeds');
   const dashEl = $('dash');
   const dashFill = $('dash-fill');
   const jobEl = $('job');
@@ -61,7 +64,7 @@ export function createHud(root, { onStart, onNew, onTake, onRetry, onLeave, onCh
   let shopRows = [];
 
   // The map: the ground painted once, the moving things over it every frame.
-  let base = null;
+  let base = null, districtAt = () => null;
   const ctx = mapEl.getContext('2d');
 
   const clock = (s) => {
@@ -74,6 +77,7 @@ export function createHud(root, { onStart, onNew, onTake, onRetry, onLeave, onCh
 
     /** The map to draw in the corner: its ground, painted now. */
     setMap(m) {
+      districtAt = (x, z) => m.districtAt(x, z);
       base = document.createElement('canvas');
       base.width = m.cols; base.height = m.rows;
       const b = base.getContext('2d');
@@ -103,7 +107,7 @@ export function createHud(root, { onStart, onNew, onTake, onRetry, onLeave, onCh
      * the townsfolk with work going, and what the job under way is after —
      * pinned to the rim when it's further off than the map shows.
      */
-    minimap({ ball, yaw, cars, pumps, givers = [], shops = [], goal = null, goals = [], mover = null, rival = null, span = 64 }) {
+    minimap({ ball, yaw, cars, pumps, givers = [], shops = [], goal = null, goals = [], mover = null, rival = null, golden = [], seen = new Set(), span = 64 }) {
       if (!base) return;
       const W = mapEl.width, H = mapEl.height;
       const s = W / span;
@@ -126,6 +130,16 @@ export function createHud(root, { onStart, onNew, onTake, onRetry, onLeave, onCh
       for (const c of cars) ctx.fillRect(c.x - 0.7, c.z - 0.7, 1.4, 1.4);
       for (const p of pumps) dot(ctx, p.x, p.z, 1.3, '#c8382c', '#ffffff');
       for (const p of shops) dot(ctx, p.x, p.z, 1.6, '#3a8a4a', '#e8f4e0');
+      for (const g of golden) {
+        if (g.got) continue;
+        // Only in the parts of town it has been to.
+        const d = districtAt(g.x, g.z);
+        if (d && !seen.has(d.name)) continue;
+        ctx.fillStyle = '#ffd23a';
+        ctx.strokeStyle = '#3a2a00';
+        ctx.lineWidth = 0.4;
+        star(ctx, g.x, g.z, 1.8);
+      }
       for (const g of givers) dot(ctx, g.x, g.z, 1.9, '#ffd23a', '#3a2400');
       for (const t of goals) dot(ctx, t.x, t.z, 1.1, '#ff9a5a', '#3a1400');
       if (mover) dot(ctx, mover.x, mover.z, 1.8, '#ff3a2a', '#ffffff');
@@ -159,19 +173,19 @@ export function createHud(root, { onStart, onNew, onTake, onRetry, onLeave, onCh
       ctx.stroke();
     },
 
-    title(saved, { done, total }) {
+    title(saved, { done, total, found = 0, golden = 0 }) {
       titleEl.hidden = false;
       top.hidden = true;
       mapEl.hidden = true;
       bannerEl.hidden = true;
       jobEl.hidden = offerEl.hidden = failedEl.hidden = shopEl.hidden = touchEl.hidden = true;
       shown = false;
-      const started = done > 0 || saved.cash > 0 || saved.time > 0;
+      const started = done > 0 || found > 0 || saved.cash > 0 || saved.time > 0;
       startEl.textContent = started ? 'CARRY ON' : 'ROLL OUT';
       freshEl.hidden = !started;
       const bits = [];
-      if (started) bits.push(`${done} of ${total} jobs done`, `$${saved.cash}`);
-      if (done === total && total > 0) bits.push('the key to the city');
+      if (started) bits.push(`${found} of ${golden} golden seeds`, `${done} of ${total} jobs`, `$${saved.cash}`);
+      if (saved.best) bits.push(`best: all ${golden} seeds in ${clock(saved.best)}`);
       bestEl.textContent = bits.join(' · ');
     },
 
@@ -192,6 +206,8 @@ export function createHud(root, { onStart, onNew, onTake, onRetry, onLeave, onCh
       }
     },
     jobs(n, total) { jobsEl.textContent = `${n}/${total}`; },
+    gold(n, total) { goldEl.textContent = `${n}/${total}`; },
+    seeds(n) { seedsEl.textContent = String(n); },
     dash(k) {
       dashFill.style.width = `${Math.round(Math.max(0, Math.min(1, k)) * 100)}%`;
       dashEl.classList.toggle('ready', k >= 1);
@@ -308,6 +324,17 @@ export function createHud(root, { onStart, onNew, onTake, onRetry, onLeave, onCh
       muteEl.textContent = on ? 'sound off' : 'sound on';
     },
   };
+}
+
+function star(ctx, x, y, r) {
+  ctx.beginPath();
+  for (let i = 0; i < 10; i++) {
+    const a = (i / 10) * Math.PI * 2 - Math.PI / 2, rr = i % 2 ? r * 0.45 : r;
+    ctx.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr);
+  }
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
 }
 
 function dot(ctx, x, y, r, fill, stroke) {

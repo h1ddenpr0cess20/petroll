@@ -7,14 +7,16 @@ const memory = () => {
   const data = new Map();
   return { getItem: (k) => data.get(k) ?? null, setItem: (k, v) => data.set(k, String(v)) };
 };
-const EMPTY = { done: [], cash: 0, owned: [], tint: 'tint:blue', pump: null, time: 0 };
+const EMPTY = { found: [], done: [], cash: 0, owned: [], tint: 'tint:blue', pump: null, time: 0, best: 0 };
 
 test('remembers the jobs done, the cash, what was bought and worn, the last pump and the time', () => {
   const store = memory();
   const s = createStorage(store);
   assert.deepEqual(s.load(), EMPTY);
   s.progress({ done: ['paper', 'signs', 'paper'], cash: 250, pump: 'Downtown', time: 120 });
-  s.progress({ owned: ['tint:pink'], tint: 'tint:pink' });
+  s.progress({ owned: ['tint:pink'], tint: 'tint:pink', found: ['Home sweet home', 'The deep end', 'Home sweet home'] });
+  s.finished(900);
+  s.finished(1200);
   const again = createStorage(store).load();
   assert.deepEqual(again.done, ['paper', 'signs']);
   assert.equal(again.cash, 250);
@@ -22,7 +24,17 @@ test('remembers the jobs done, the cash, what was bought and worn, the last pump
   assert.equal(again.tint, 'tint:pink');
   assert.equal(again.pump, 'Downtown');
   assert.equal(again.time, 120);
-  assert.deepEqual(createStorage(store).clear(), EMPTY);
+  assert.deepEqual(again.found, ['Home sweet home', 'The deep end']);
+  assert.equal(again.best, 900);
+  assert.deepEqual(createStorage(store).clear(), { ...EMPTY, best: 900 });
+});
+
+test('golden seeds found before the jobs came carry over', () => {
+  const store = memory();
+  store.setItem('petroll.v1', JSON.stringify({ found: ['Home sweet home'], pump: 'Home', time: 50, best: 0 }));
+  const s = createStorage(store).load();
+  assert.deepEqual(s.found, ['Home sweet home']);
+  assert.equal(s.pump, 'Home');
 });
 
 test('plays on without storage, or with storage that throws or holds rubbish', () => {

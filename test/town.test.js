@@ -32,6 +32,31 @@ test('it starts on safe ground at home, with an air pump in the garden', () => {
 
 const free = (x, y, z, r = 0.1) => !town.solids.some((s) => inside(s, x, y, z, r)) && !town.cylinders.some((c) => Math.hypot(x - c.x, z - c.z) < c.r + r && y > c.y0 && y < c.y1);
 
+test('30 golden seeds, each with its own name, each somewhere on the map, in a district, and not inside anything', () => {
+  assert.equal(town.golden.length, 30);
+  assert.equal(new Set(town.golden.map((g) => g.name)).size, 30);
+  for (const g of town.golden) {
+    const y = (g.y ?? town.heightAt(g.x, g.z)) + 0.42;
+    assert.notEqual(town.heightAt(g.x, g.z), null, g.name);
+    assert.ok(town.districtAt(g.x, g.z), g.name);
+    for (const s of town.solids) assert.ok(!inside(s, g.x, y, g.z, 0.1), `${g.name} is inside something`);
+  }
+  // Some in every part of town.
+  const counts = new Map();
+  for (const g of town.golden) counts.set(town.districtAt(g.x, g.z).name, (counts.get(town.districtAt(g.x, g.z).name) ?? 0) + 1);
+  for (const d of ['Maple Grove', 'Downtown', "Gas 'n' Go", 'The Oil Field', 'The Refinery']) assert.ok(counts.get(d) >= 2, `${d} has ${counts.get(d) ?? 0}`);
+  for (const d of ['Big Rig Truck Stop', 'The Drive-in', 'Crude Acres', "Baron's Hill", 'Wildcat Speedway', 'The Quarry']) assert.ok(counts.get(d) >= 1, `${d} has none`);
+});
+
+test('the seeds lie on the map, clear of anything solid', () => {
+  assert.ok(town.seeds.length > 200);
+  for (const s of town.seeds) {
+    assert.notEqual(town.heightAt(s.x, s.z), null);
+    const y = (s.y ?? town.heightAt(s.x, s.z)) + 0.32;
+    for (const b of town.solids) assert.ok(!inside(b, s.x, y, s.z), `seed at ${s.x},${s.z}`);
+  }
+});
+
 test('the townsfolk stand on the map, clear of anything, each with work, in a district', () => {
   assert.ok(town.givers.length >= 10);
   assert.equal(new Set(town.givers.map((g) => g.id)).size, town.givers.length);

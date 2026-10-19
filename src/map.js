@@ -37,6 +37,8 @@ export class TownMap {
     this.flares = [];
     this.lifts = [];
     this.drums = [];
+    this.seeds = [];
+    this.golden = [];
     this.pumps = [];
     this.givers = [];
     this.critters = [];
@@ -217,6 +219,21 @@ export class TownMap {
   /** An oil drum that rolls after the hamster when it comes near. */
   drum(x, z, { range = 7 } = {}) {
     this.drums.push({ x: x + 0.5, z: z + 0.5, range });
+    return this;
+  }
+
+  /** Sunflower seeds in a line from (x0, z0) to (x1, z1), `n` of them; on the ground, or at `y` (on a deck). */
+  seedLine(x0, z0, x1, z1, n, { y = null } = {}) {
+    for (let i = 0; i < n; i++) {
+      const t = n === 1 ? 0.5 : i / (n - 1);
+      this.seeds.push({ x: x0 + (x1 - x0) * t, z: z0 + (z1 - z0) * t, y });
+    }
+    return this;
+  }
+
+  /** A golden seed: one of the things to find. `y` sets it on a deck or a lift's top. */
+  goldenSeed(name, x, z, { y = null } = {}) {
+    this.golden.push({ name, x, z, y });
     return this;
   }
 
