@@ -106,7 +106,7 @@ export function work(c, { P }) {
   c.job({
     id: 'hardhat', giver: 'hoss', title: 'Hard Hat Hustle', reward: 160, time: 60,
     brief: 'Run the site inspection: up the scaffold to the top, then the fountain and the back alley. The inspector does it in under a minute.',
-    stages: [{ type: 'gates', text: 'Up the scaffold, then round downtown', r: 1.3, points: [[78.5, 35], [84.5, 36], [78.5, 37], [72, 38.5], [58, 42], [58.5, 26.2]] }],
+    stages: [{ type: 'gates', text: 'Up the scaffold, then round downtown', r: 1.3, points: [[78.5, 35], [84.5, 36], [78.5, 37], [72, 38.5], [59.6, 42], [58.5, 26.2]] }],
   });
 
   // The Gas 'n' Go.
