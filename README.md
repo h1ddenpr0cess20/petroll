@@ -31,8 +31,6 @@ sculpted with the SDF sculptor from the
 
 ![The title screen](docs/screenshots/title.jpg)
 
-![The ball and the hamster](docs/screenshots/hamster.jpg)
-
 ## Run
 
 ```sh
