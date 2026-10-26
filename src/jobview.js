@@ -1,12 +1,12 @@
-import { createKit } from './kit.js';
+import { createKit } from 'madness-engine/kit';
 import { CAST as CAST_DEFS, DETAIL } from './cast/index.js';
 import { ready } from './cast/library.js';
-import { createModel } from './cast/model.js';
-import { createHamster, createPlayer } from './hamster.js';
+import { createModel } from 'madness-engine/models/model';
+import { createHamster, createPlayer } from 'madness-engine/heroes/hamster';
 import { hasWork, objective } from './jobs.js';
 import { model } from './models/library.js';
-import { rollSpin, turn } from './physics.js';
-import { materialsOf } from './sculpt/bake.js';
+import { rollSpin, turn } from 'madness-engine/physics';
+import { materialsOf } from 'madness-engine/models/legacy-bake';
 
 /**
  * The jobs and what there is to knock about, as they look:

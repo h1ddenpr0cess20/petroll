@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import * as GFX from '../src/vendor/gfx/index.js';
+import * as GFX from 'madness-engine/gfx';
 import { TownMap } from '../src/map.js';
-import { placeBall } from '../src/physics.js';
+import { placeBall } from 'madness-engine/physics';
 import { startJob } from '../src/jobs.js';
 import { BUBBLE, createRun, DASH, HOP, putBack, respawn, STEP, stepRun } from '../src/run.js';
 

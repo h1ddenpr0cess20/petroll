@@ -11,11 +11,13 @@
  * fixed number); every other lamp is baked into the ground (`map.js`).
  */
 
-import * as GFX from './vendor/gfx/index.js';
-import { Renderer } from './vendor/gfx/renderer.js';
-import { WebGLBackend } from './vendor/gfx/webgl.js';
-import { WebGPUBackend } from './vendor/gfx/webgpu.js';
-import { createView } from './view.js';
+import * as GFX from 'madness-engine/gfx';
+import { Renderer } from 'madness-engine/gfx/renderer';
+import { WebGLBackend } from 'madness-engine/gfx/webgl';
+import { WebGPUBackend } from 'madness-engine/gfx/webgpu';
+import { createView } from 'madness-engine/views/town';
+import { paintRoom } from 'madness-engine/textures/rooms/town';
+import { paintSky } from 'madness-engine/textures/skies/town';
 
 /** How far back the camera sits at zoom 1, and its lens. Where round the marble it is, is the view's (`view.js`). */
 export const LENS = Object.freeze({ distance: 10, fov: 36 });
@@ -41,139 +43,8 @@ export const MOON = Object.freeze(new GFX.Vector3(-0.35, 1, 0.55).normalize());
 /** How many of the town's lamps get a real light at once (the nearest the hamster). The count is fixed, so no shader ever changes. */
 export const LAMP_LIGHTS = 6;
 
-const SKY = [[0, '#03040c'], [0.3, '#070a1c'], [0.44, '#121a36'], [0.5, '#2a2a44'], [0.53, '#1a1626'], [1, '#050407']];
-
-/**
- * The night over Petroleum Springs, as an equirectangular canvas: stars, a
- * moon, a sky going to a dirty orange at the horizon where the refineries
- * light it from below, and on the horizon the silhouettes of cracking
- * towers and flare stacks burning, derricks with red lights on top, and
- * the lights of the next town.
- */
-function paintSky(u, { width = 2048, ridge = true } = {}) {
-  const height = width / 2;
-  const c = document.createElement('canvas');
-  c.width = width; c.height = height;
-  const ctx = c.getContext('2d');
-  if (!ctx) return null;
-  const g = ctx.createLinearGradient(0, 0, 0, height);
-  for (const [t, col] of SKY) g.addColorStop(t, col);
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 0, width, height);
-  const horizon = height / 2;
-  let s = 11;
-  const r = () => ((s = (s * 16807) % 2147483647) / 2147483647);
-  // The glow off the refineries, low along the horizon, strongest in two places.
-  for (const [cx, w, a] of [[0.15, 0.25, 0.32], [0.62, 0.2, 0.26], [0.88, 0.12, 0.16]]) {
-    for (const ox of [-width, 0, width]) {
-      const glow = ctx.createRadialGradient(cx * width + ox, horizon, 0, cx * width + ox, horizon, w * width);
-      glow.addColorStop(0, `rgba(255,140,60,${a})`);
-      glow.addColorStop(0.4, `rgba(200,90,50,${a * 0.4})`);
-      glow.addColorStop(1, 'rgba(120,60,40,0)');
-      ctx.fillStyle = glow;
-      ctx.fillRect(0, horizon - height * 0.3, width, height * 0.35);
-    }
-  }
-  for (let k = 0; k < 900; k++) {
-    const y = r() * horizon * 0.92;
-    ctx.fillStyle = `rgba(255,255,255,${(0.15 + r() * 0.6) * (1 - y / horizon)})`;
-    const sz = r() < 0.04 ? 2 : 1.1;
-    ctx.fillRect(r() * width, y, sz, sz);
-  }
-  // The moon.
-  const mx = u(MOON.x, MOON.z) * width, my = horizon - (Math.asin(MOON.y * 0.45) / Math.PI) * height;
-  const halo = ctx.createRadialGradient(mx, my, 0, mx, my, height * 0.12);
-  halo.addColorStop(0, 'rgba(220,230,255,0.35)');
-  halo.addColorStop(1, 'rgba(220,230,255,0)');
-  ctx.fillStyle = halo;
-  ctx.fillRect(mx - height * 0.12, my - height * 0.12, height * 0.24, height * 0.24);
-  ctx.fillStyle = '#eef0f6';
-  ctx.beginPath(); ctx.arc(mx, my, height * 0.018, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = 'rgba(180,186,200,0.6)';
-  for (const [dx, dy, rr] of [[-0.3, -0.2, 0.25], [0.25, 0.1, 0.18], [0.05, 0.35, 0.12]]) {
-    ctx.beginPath(); ctx.arc(mx + dx * height * 0.018, my + dy * height * 0.018, rr * height * 0.018, 0, Math.PI * 2); ctx.fill();
-  }
-  if (!ridge) return c;
-  const ink = '#08070c';
-  // Low hills all round.
-  ctx.fillStyle = ink;
-  ctx.beginPath();
-  ctx.moveTo(0, horizon + 6);
-  for (let x = 0; x <= width; x += 6) ctx.lineTo(x, horizon - 4 - 6 * (0.5 + 0.5 * Math.sin(x / 70)) - 4 * Math.sin(x / 19 + 1) ** 2);
-  ctx.lineTo(width, height); ctx.lineTo(0, height);
-  ctx.fill();
-  // Refineries: towers, columns, stacks with flames, and their lights.
-  const refinery = (x0, w) => {
-    ctx.fillStyle = ink;
-    for (let x = x0; x < x0 + w; x += 4 + r() * 8) {
-      const h = 6 + r() * 26, bw = 3 + r() * 6;
-      ctx.fillRect(x, horizon - 8 - h, bw, h + 10);
-      if (r() < 0.3) { ctx.beginPath(); ctx.arc(x + bw / 2, horizon - 8, 6 + r() * 6, Math.PI, 0); ctx.fill(); }
-    }
-    for (let k = 0; k < 3; k++) {
-      const x = x0 + r() * w, h = 36 + r() * 30;
-      ctx.fillStyle = ink;
-      ctx.fillRect(x, horizon - 8 - h, 3, h);
-      const f = ctx.createRadialGradient(x + 1.5, horizon - 12 - h, 0, x + 1.5, horizon - 12 - h, 14);
-      f.addColorStop(0, 'rgba(255,230,160,1)'); f.addColorStop(0.3, 'rgba(255,140,40,0.8)'); f.addColorStop(1, 'rgba(255,90,20,0)');
-      ctx.fillStyle = f;
-      ctx.fillRect(x - 14, horizon - 30 - h, 32, 32);
-    }
-    for (let k = 0; k < w * 0.6; k++) {
-      ctx.fillStyle = `rgba(255,${190 + r() * 60},${110 + r() * 80},${0.5 + r() * 0.5})`;
-      ctx.fillRect(x0 + r() * w, horizon - 10 - r() * 34, 1.5, 1.5);
-    }
-  };
-  refinery(width * 0.08, width * 0.14);
-  refinery(width * 0.56, width * 0.12);
-  // Derricks across the fields, each with a red light on top.
-  for (let k = 0; k < 22; k++) {
-    const x = r() * width, h = 14 + r() * 16, base = horizon - 6;
-    ctx.strokeStyle = ink;
-    ctx.lineWidth = 1.4;
-    ctx.beginPath(); ctx.moveTo(x - 5, base); ctx.lineTo(x, base - h); ctx.lineTo(x + 5, base); ctx.stroke();
-    ctx.fillStyle = 'rgba(255,40,30,0.95)';
-    ctx.fillRect(x - 1, base - h - 2, 2, 2);
-  }
-  // A town's lights in the distance.
-  for (let k = 0; k < 260; k++) {
-    ctx.fillStyle = `rgba(255,${200 + r() * 55},${130 + r() * 90},${0.3 + r() * 0.6})`;
-    ctx.fillRect(width * 0.3 + r() * width * 0.14, horizon - 4 - r() * 8, 1.2, 1.2);
-  }
-  return c;
-}
-
 /** Round the sky dome (SphereGeometry's u), and round the reflections (equirectangular). */
 const domeU = (dx, dz) => ((Math.atan2(dz, -dx) / (Math.PI * 2)) % 1 + 1) % 1;
-
-/** What the chrome, the paint and the puddles reflect: the night, and the sodium and neon of the town round them. */
-function paintRoom(width = 1024) {
-  const height = width / 2;
-  const c = document.createElement('canvas');
-  c.width = width; c.height = height;
-  const ctx = c.getContext('2d');
-  if (!ctx) return null;
-  const wall = ctx.createLinearGradient(0, 0, 0, height);
-  wall.addColorStop(0, '#141a30');
-  wall.addColorStop(0.45, '#0e0e18');
-  wall.addColorStop(0.55, '#1a120c');
-  wall.addColorStop(1, '#060504');
-  ctx.fillStyle = wall;
-  ctx.fillRect(0, 0, width, height);
-  ctx.globalCompositeOperation = 'lighter';
-  const glow = (x, y, rr, colour) => {
-    const g = ctx.createRadialGradient(x, y, 0, x, y, rr);
-    g.addColorStop(0, colour);
-    g.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = g;
-    ctx.fillRect(x - rr, y - rr, rr * 2, rr * 2);
-  };
-  glow(width * 0.3, height * 0.1, height * 0.18, 'rgba(200,210,255,0.35)');
-  const colours = ['rgba(255,170,80,0.8)', 'rgba(255,60,60,0.6)', 'rgba(255,200,120,0.7)', 'rgba(80,200,255,0.5)', 'rgba(255,170,80,0.8)', 'rgba(255,120,40,0.7)'];
-  for (let k = 0; k < 12; k++) glow(width * (0.04 + k * 0.083), height * (0.38 + (k % 3) * 0.05), height * 0.06, colours[k % colours.length]);
-  ctx.globalCompositeOperation = 'source-over';
-  return c;
-}
 
 export async function createStage(host) {
   const preference = new URLSearchParams(globalThis.location?.search ?? '').get('renderer');

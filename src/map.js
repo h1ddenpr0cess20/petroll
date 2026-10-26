@@ -1,7 +1,8 @@
-import { World } from './physics.js';
+import { World } from 'madness-engine/physics';
 import { MODELS } from './models/index.js';
-import { FACADES } from './paint.js';
-import { surfaceOf } from './surfaces.js';
+import { FACADES } from 'madness-engine/textures/town/paint';
+import { surfaceOf } from 'madness-engine/textures/town/surfaces';
+import { linearRGB } from 'madness-engine/color';
 
 /**
  * The world is one big grid of tiles, each with its own four corner heights
@@ -359,15 +360,6 @@ export class TownMap {
 
 export const isFlat = (c) => c.h.every((v) => Math.abs(v - c.h[0]) < 1e-6);
 
-/** sRGB hex to linear RGB — vertex colours are linear. */
-export function linearRGB(hex) {
-  const n = parseInt(hex.slice(1), 16);
-  return [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => {
-    const c = v / 255;
-    return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
-  });
-}
-
 /** The night, everywhere: what the ground looks like with no lamp near it. */
 export const AMBIENT = Object.freeze([0.3, 0.32, 0.46]);
 
@@ -424,7 +416,7 @@ const hash = (x, z) => {
  * the still boxes.
  */
 export function buildMap(map) {
-  const world = new World({ cols: map.cols, rows: map.rows });
+  const world = new World({ cols: map.cols, rows: map.rows, slideUnder: true });
   const blank = () => ({ position: [], normal: [], color: [], uv: [] });
   const tops = new Map(), walls = new Map();
   const layer = (m, k) => {

@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import * as GFX from '../src/vendor/gfx/index.js';
+import * as GFX from 'madness-engine/gfx';
 import { createHazards, flareAt, liftAt, nodAt } from '../src/hazards.js';
 import { buildMap, TownMap } from '../src/map.js';
-import { createBall, placeBall } from '../src/physics.js';
+import { createBall, placeBall } from 'madness-engine/physics';
 
 test('a pumpjack nods: down on the ground for a moment, up for longer', () => {
   let down = 0, n = 0;

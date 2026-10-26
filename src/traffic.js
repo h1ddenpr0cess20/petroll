@@ -1,5 +1,5 @@
 import { model } from './models/library.js';
-import { materialsOf } from './sculpt/bake.js';
+import { materialsOf } from 'madness-engine/models/legacy-bake';
 
 /**
  * The traffic: cars, trucks and tankers driving round the roads of the

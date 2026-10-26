@@ -1,6 +1,6 @@
-import { createKit } from './kit.js';
+import { createKit } from 'madness-engine/kit';
 import { model } from './models/library.js';
-import { collideBalls, createBall, placeBall, PUSH, rollSpin, stepBall, turn } from './physics.js';
+import { collideBalls, createBall, placeBall, PUSH, rollSpin, stepBall, turn } from 'madness-engine/physics';
 
 /**
  * Everything in the world that moves on its own and isn't traffic:

@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import * as GFX from '../src/vendor/gfx/index.js';
+import * as GFX from 'madness-engine/gfx';
 import { buildMap, TownMap } from '../src/map.js';
-import { createBall, placeBall } from '../src/physics.js';
+import { createBall, placeBall } from 'madness-engine/physics';
 import { createTown } from '../src/town.js';
 import { along, createTraffic, roundedPath } from '../src/traffic.js';
 

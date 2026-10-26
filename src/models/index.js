@@ -1,7 +1,7 @@
-import { ODDS } from './odds.js';
-import { OIL } from './oil.js';
-import { STREET } from './street.js';
-import { VEHICLES } from './vehicles.js';
+import { ODDS } from 'madness-engine/scenery/odds';
+import { OIL } from 'madness-engine/scenery/oil';
+import { STREET } from 'madness-engine/scenery/street';
+import { VEHICLES } from 'madness-engine/scenery/vehicles';
 
 /** How much coarser than sculpted a model is meshed, by name: the seeds, a couple of hundred of them and tiny on screen. */
 const COARSE = { seed: 1.8 };

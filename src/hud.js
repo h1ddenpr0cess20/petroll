@@ -1,5 +1,5 @@
-import { SURFACES } from './surfaces.js';
-import { groundAxes } from './view.js';
+import { SURFACES } from 'madness-engine/textures/town/surfaces';
+import { groundAxes } from 'madness-engine/views/town';
 
 /**
  * Everything on screen that isn't the 3D view: where it is, the golden

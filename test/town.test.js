@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import * as GFX from '../src/vendor/gfx/index.js';
+import * as GFX from 'madness-engine/gfx';
 import { isFlat } from '../src/map.js';
 import { drawStructures, STRUCTURES } from '../src/structures.js';
-import { SURFACES } from '../src/surfaces.js';
+import { SURFACES } from 'madness-engine/textures/town/surfaces';
 import { COLS, createTown, ROWS } from '../src/town.js';
 
 const town = createTown();

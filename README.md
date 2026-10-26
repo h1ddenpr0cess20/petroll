@@ -27,7 +27,7 @@ is a plastic shell that rolls with a hamster inside it. The hamster doesn't
 roll: it stays on its feet, turns to face where it's going, and runs. It's
 sculpted with the SDF sculptor from the
 [Rock 'n' Roller](https://github.com/h1ddenpr0cess20/rocknroller-iii) games
-(`src/sculpt/`, from [Metroll](https://github.com/h1ddenpr0cess20/metroll)).
+(`madness-engine/models`, from [Metroll](https://github.com/h1ddenpr0cess20/metroll)).
 
 ![The title screen](docs/screenshots/title.jpg)
 
@@ -154,10 +154,8 @@ and the plastic, the paint and the puddles all reflect the same sky.
 
 | | |
 |---|---|
-| `src/vendor/gfx/` | Alan's renderer, as in Madness, unchanged: WebGPU or WebGL 2, physically based shading, transmission, shadows. |
-| `src/hamster.js` | The ball (thin tinted plastic, the seam, the twist-off door with its tabs, the air slits) and the hamster, sculpted, baked and running. |
+| [madness-engine](https://github.com/h1ddenpr0cess20/madness-engine) | The engine the game runs on: Alan's renderer, the physics, input, the town view, the sculpting kit, and the library's townsfolk, animals, hamster, streets, vehicles, surfaces and sky. |
 | `src/cast/` | The townsfolk and the animals about town, sculpted and rigged: the people, pigeons, corgi, rat and poodle from [Rock 'n' Roller III](https://github.com/h1ddenpr0cess20/rocknroller-iii), the cats from [Catroller](https://github.com/h1ddenpr0cess20/catroller); baked in workers while the title waits. |
-| `src/sculpt/` | Metroll's SDF sculptor (`sdf.js`, `skins.js`), and `bake.js` to make a mesh of a sculpt. |
 | `src/map.js` | The map: a grid of tiles, each with four corner heights and a surface, and on top of them road paint, props, solid boxes, decks, roads for the traffic, the hazards and the pickups. It builds the meshes and the collision triangles. |
 | `src/town.js` | Petroleum Springs, district by district. |
 | `src/work.js` | Who wants what doing: the townsfolk, their jobs, the bubble shops, the things to knock over. |
@@ -165,11 +163,8 @@ and the plastic, the paint and the puddles all reflect the same sky.
 | `src/pickups.js` | The seeds and the golden seeds, as they look. |
 | `src/jobview.js`, `src/shop.js` | The jobs as they look (the townsfolk, beacons, the car to ram, the rival, the arrow), and the shop's wares. |
 | `src/xray.js` | Whether the ball is hidden from the camera, by rays against the town, for the ring drawn where it is when it is. |
-| `src/surfaces.js`, `src/textures.js` | What the ground is made of, how it grips and drags, and how each surface is painted. |
-| `src/props.js`, `src/kit.js` | Everything standing on the map, built from plain shapes and merged into a few meshes. |
 | `src/traffic.js` | The cars, round their loops with the corners rounded off, waiting behind each other at junctions and braking for the hamster. |
 | `src/hazards.js` | Pumpjacks, gas flares, lifts and oil drums. |
-| `src/physics.js` | Madness's sphere physics, with grip and drag per surface and still boxes bucketed. |
 | `src/run.js` | The world as it runs, with nothing drawn: the rules for the bubble, hops and dashes, trampolines, what's knocked over, the pumps, the jobs. The game draws it; the tests drive it. |
 | `src/game.js`, `src/hud.js`, `src/audio.js` | The game, the screen round it (the map in the corner turns with the view), and every sound, synthesised. |
 

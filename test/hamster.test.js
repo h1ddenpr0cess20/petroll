@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import * as GFX from '../src/vendor/gfx/index.js';
-import { createPlayer, RADIUS, TINTS } from '../src/hamster.js';
+import * as GFX from 'madness-engine/gfx';
+import { createPlayer, RADIUS, TINTS } from 'madness-engine/heroes/hamster';
 
 const { player, spin, hamster, run } = createPlayer(GFX);
 const body = hamster.getObjectByName('hamster-body');

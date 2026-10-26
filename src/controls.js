@@ -1,0 +1,2 @@
+export const presses = {"Enter":"start","NumpadEnter":"start","Space":"hop","ShiftLeft":"dash","ShiftRight":"dash","KeyP":"pause","Escape":["pause","back"],"KeyX":"quit","KeyM":"mute","KeyC":"home","ArrowUp":"up","KeyW":"up","ArrowDown":"down","KeyS":"down"};
+export const padPresses = (b, sx, sy) => ({ start: b(0), back: b(1), dash: b(2) || b(7), quit: b(8), pause: b(9), home: b(11), up: b(12) || sy < -0.6, down: b(13) || sy > 0.6 });

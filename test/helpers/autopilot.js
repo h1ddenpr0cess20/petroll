@@ -11,7 +11,7 @@
  * can. The tests hold the town to that.
  */
 
-import * as GFX from '../../src/vendor/gfx/index.js';
+import * as GFX from 'madness-engine/gfx';
 import { flareAt, liftAt, nodAt } from '../../src/hazards.js';
 import { createRun, putBack, respawn, STEP, stepRun } from '../../src/run.js';
 import { createPlanner } from './plan.js';
