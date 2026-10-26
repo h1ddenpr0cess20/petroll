@@ -1,12 +1,12 @@
-import { RADIUS } from './hamster.js';
+import { RADIUS } from 'madness-engine/heroes/hamster';
 import { createHazards } from './hazards.js';
 import { createBoard, stepJobs } from './jobs.js';
 import { buildMap, DEPTH } from './map.js';
-import { BREAK_SPEED, createBall, placeBall, PUSH, stepBall, TOP_SPEED } from './physics.js';
-import { surfaceOf } from './surfaces.js';
+import { BREAK_SPEED, createBall, placeBall, PUSH, stepBall, TOP_SPEED } from 'madness-engine/physics';
+import { surfaceOf } from 'madness-engine/textures/town/surfaces';
 import { createTown } from './town.js';
 import { createTraffic } from './traffic.js';
-import { groundAxes } from './view.js';
+import { groundAxes } from 'madness-engine/views/town';
 
 /**
  * The world as it runs, with nothing drawn or heard: the town, the traffic,

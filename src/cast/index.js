@@ -1,20 +1,20 @@
-import archaeologist from './archaeologist.js';
-import cabbie from './cabbie.js';
-import { CAT_DEFS } from './cat.js';
-import corgi from './corgi.js';
-import dancer from './dancer.js';
-import gent from './gent.js';
-import hotdog from './hotdog.js';
-import nonna from './nonna.js';
-import pigeon from './pigeon.js';
-import poodle from './poodle.js';
-import rat from './rat.js';
-import robot from './robot.js';
-import security from './security.js';
-import skier from './skier.js';
-import superfan from './superfan.js';
-import tourist from './tourist.js';
-import yodeler from './yodeler.js';
+import archaeologist from 'madness-engine/characters/archaeologist';
+import cabbie from 'madness-engine/characters/cabbie';
+import { CAT_DEFS } from 'madness-engine/characters/cat';
+import corgi from 'madness-engine/characters/corgi';
+import dancer from 'madness-engine/characters/dancer';
+import gent from 'madness-engine/characters/gent';
+import hotdog from 'madness-engine/characters/hotdog';
+import nonna from 'madness-engine/characters/nonna';
+import pigeon from 'madness-engine/characters/pigeon';
+import poodle from 'madness-engine/characters/poodle';
+import rat from 'madness-engine/characters/rat';
+import robot from 'madness-engine/characters/robot';
+import security from 'madness-engine/characters/security';
+import skier from 'madness-engine/characters/skier';
+import superfan from 'madness-engine/characters/superfan';
+import tourist from 'madness-engine/characters/tourist';
+import yodeler from 'madness-engine/characters/yodeler';
 
 /**
  * The townsfolk, and the animals about town: rigged and sculpted, borrowed

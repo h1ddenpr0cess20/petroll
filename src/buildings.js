@@ -1,6 +1,6 @@
-import { createKit } from './kit.js';
-import { linearRGB } from './map.js';
-import { FACADES, WINDOW } from './paint.js';
+import { createKit } from 'madness-engine/kit';
+import { linearRGB } from 'madness-engine/color';
+import { FACADES, WINDOW } from 'madness-engine/textures/town/paint';
 
 /**
  * What a building has besides its walls and roof (which the map draws):

@@ -1,4 +1,4 @@
-import { linearRGB } from './map.js';
+import { linearRGB } from 'madness-engine/color';
 import { model } from './models/library.js';
 
 /**

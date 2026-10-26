@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { buildMap, DEPTH, linearRGB, TownMap } from '../src/map.js';
+import { linearRGB } from 'madness-engine/color';
+import { buildMap, DEPTH, TownMap } from '../src/map.js';
 
 const map = (cols = 10, rows = 10) => new TownMap({ name: 't', cols, rows });
 const near = (a, b, e = 1e-9) => Math.abs(a - b) < e;

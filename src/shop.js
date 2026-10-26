@@ -1,4 +1,4 @@
-import { TINTS } from './hamster.js';
+import { TINTS } from 'madness-engine/heroes/hamster';
 
 /**
  * The bubble shop: what the jobs' pay (and the loose change from knocking

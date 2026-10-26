@@ -1,6 +1,6 @@
-import { createKit } from './kit.js';
-import { linearRGB } from './map.js';
-import { wallMaterial } from './textures.js';
+import { createKit } from 'madness-engine/kit';
+import { linearRGB } from 'madness-engine/color';
+import { wallMaterial } from 'madness-engine/textures/town/textures';
 
 /**
  * The town's bigger things — tanks, the derrick, the crane, the canopy, the

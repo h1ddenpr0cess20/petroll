@@ -1,4 +1,4 @@
-import { bakeData } from '../sculpt/bake.js';
+import { bakeData } from 'madness-engine/models/legacy-bake';
 import { MODELS } from './index.js';
 
 /** Bakes models off the main thread: a name in, the mesh's arrays out (handed over, not copied). */

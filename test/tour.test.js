@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import * as GFX from '../src/vendor/gfx/index.js';
+import * as GFX from 'madness-engine/gfx';
 import { createRun } from '../src/run.js';
 import { drive } from './helpers/autopilot.js';
 import { doJob } from './helpers/jobpilot.js';

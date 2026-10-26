@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { buildMap, TownMap } from '../src/map.js';
-import { createBall, placeBall } from '../src/physics.js';
+import { createBall, placeBall } from 'madness-engine/physics';
 import { hiddenShare } from '../src/xray.js';
 
 /** Level ground, a house-sized block in the middle, a lamp post off to one side. */

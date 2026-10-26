@@ -1,4 +1,4 @@
-import { adopt, bake, isBaked } from '../sculpt/bake.js';
+import { adopt, bake, isBaked } from 'madness-engine/models/legacy-bake';
 import { MODELS } from './index.js';
 
 /**

@@ -1,13 +1,13 @@
 import { createEffects } from './effects.js';
-import { createPlayer } from './hamster.js';
+import { createPlayer } from 'madness-engine/heroes/hamster';
 import { COUNTDOWN, nextJob, objective, quitJob, startJob } from './jobs.js';
 import { createJobView } from './jobview.js';
 import { createPickups } from './pickups.js';
-import { rollSpin, turn } from './physics.js';
+import { rollSpin, turn } from 'madness-engine/physics';
 import { createRun, putBack, respawn, STEP, stepRun, toGround } from './run.js';
 import { createWorldMeshes } from './scenery.js';
 import { choose, ITEMS, perksOf, tintOf } from './shop.js';
-import { HOME } from './view.js';
+import { HOME } from 'madness-engine/views/town';
 import { hiddenShare } from './xray.js';
 
 /**

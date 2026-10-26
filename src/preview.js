@@ -1,7 +1,7 @@
-import { createPlayer, RADIUS } from './hamster.js';
-import { createKit } from './kit.js';
+import { createPlayer, RADIUS } from 'madness-engine/heroes/hamster';
+import { createKit } from 'madness-engine/kit';
 import { MODELS } from './models/index.js';
-import { bake, materialsOf } from './sculpt/bake.js';
+import { bake, materialsOf } from 'madness-engine/models/legacy-bake';
 import { createStage } from './stage.js';
 
 /**

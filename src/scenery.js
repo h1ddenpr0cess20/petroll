@@ -1,9 +1,9 @@
-import { createKit } from './kit.js';
-import { linearRGB } from './map.js';
+import { createKit } from 'madness-engine/kit';
+import { linearRGB } from 'madness-engine/color';
 import { createBuildings } from './buildings.js';
 import { createPlaced } from './placed.js';
 import { drawStructures, seams } from './structures.js';
-import { surfaceMaterial, wallMaterial } from './textures.js';
+import { surfaceMaterial, wallMaterial } from 'madness-engine/textures/town/textures';
 
 /**
  * The world as it is drawn: the tiles (one mesh per surface, each with its

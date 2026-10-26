@@ -1,8 +1,9 @@
+import { padPresses, presses } from './controls.js';
 import './styles.css';
 import { createAudio } from './audio.js';
 import { createGame } from './game.js';
 import { createHud } from './hud.js';
-import { createInput } from './input.js';
+import { createInput } from 'madness-engine/input';
 import { CAST, DETAIL } from './cast/index.js';
 import { preload, readyAll } from './cast/library.js';
 import { bakeAll } from './models/library.js';
@@ -30,7 +31,7 @@ const hud = createHud(document.body, {
 hud.muted(audio.muted);
 document.getElementById('mute').addEventListener('mute', () => hud.muted(audio.toggleMute()));
 
-input = createInput(view, {
+input = createInput(view, { presses, padPresses,
   anchor: () => game?.marbleOnScreen(view.getBoundingClientRect()),
 });
 
