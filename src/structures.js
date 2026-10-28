@@ -52,6 +52,8 @@ function panels(light) {
     },
     /** One upright face from (x0, z0) to (x1, z1), y0 to y1, facing `n`, in panels a tile across. */
     face(tex, x0, z0, x1, z1, y0, y1, n, colour, { band = 1 } = {}) {
+      // Wound to face `n` whichever way round its ends come: only a face's front is drawn.
+      if ((x1 - x0) * n[2] - (z1 - z0) * n[0] < 0) [x0, z0, x1, z1] = [x1, z1, x0, z0];
       const L = Math.hypot(x1 - x0, z1 - z0), cols = Math.max(1, Math.round(L));
       for (let i = 0; i < cols; i++) {
         const t0 = i / cols, t1 = (i + 1) / cols;
