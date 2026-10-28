@@ -7,6 +7,7 @@ import { hasWork, objective } from './jobs.js';
 import { model } from './models/library.js';
 import { rollSpin, turn } from 'madness-engine/physics';
 import { materialsOf } from 'madness-engine/models/legacy-bake';
+import { mountWheels } from 'madness-engine/scenery/vehicles';
 
 /**
  * The jobs and what there is to knock about, as they look:
@@ -221,9 +222,14 @@ export function createJobView(GFX, run) {
       });
     }
     if (a.mover) {
+      // The body, and its wheels on it, to go round as it drives.
       const m = model(GFX, a.mover.model);
-      const mesh = new GFX.Mesh(m.geometry, materialsOf(GFX, m.def, { paint: { color: a.mover.paint } }));
+      const body = model(GFX, m.def.body.name);
+      const mesh = new GFX.Mesh(body.geometry, materialsOf(GFX, body.def, { paint: { color: a.mover.paint } }));
       mesh.castShadow = true;
+      const tyre = model(GFX, m.def.wheel);
+      const wheels = mountWheels(GFX, m.def, { geometry: tyre.geometry, material: materialsOf(GFX, tyre.def) });
+      mesh.add(wheels.group);
       const g = new GFX.Group();
       const flag = sprite(down, 0.8);
       flag.position.y = a.mover.size.height + 1.2;
@@ -231,7 +237,7 @@ export function createJobView(GFX, run) {
       shaft.position.y = a.mover.size.height;
       g.add(mesh, flag, shaft);
       job.add(g);
-      mover = { group: g, mesh, flag };
+      mover = { group: g, mesh, flag, wheels, last: null };
     }
     if (a.rival) {
       const { player, spin, run: legs } = createPlayer(GFX, { tint: a.rival.tint });
@@ -322,7 +328,13 @@ export function createJobView(GFX, run) {
         if (mover && a.mover) {
           const m = a.mover;
           mover.group.position.set(m.x, m.y, m.z);
-          mover.mesh.rotation.y = Math.atan2(m.dx, m.dz);
+          const yaw = Math.atan2(m.dx, m.dz);
+          if (mover.last) {
+            const [x, z, was] = mover.last;
+            mover.wheels.drive(Math.hypot(m.x - x, m.z - z), Math.atan2(Math.sin(yaw - was), Math.cos(yaw - was)));
+          }
+          mover.last = [m.x, m.z, yaw];
+          mover.mesh.rotation.y = yaw;
           mover.flag.position.y = m.size.height + 1.2 + Math.sin(time * 4) * 0.1;
         }
         if (rival && a.rival) {

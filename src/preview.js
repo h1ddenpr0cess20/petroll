@@ -3,12 +3,14 @@ import { createKit } from 'madness-engine/kit';
 import { MODELS } from './models/index.js';
 import { bake, materialsOf } from 'madness-engine/models/legacy-bake';
 import { createStage } from './stage.js';
+import { mountWheels } from 'madness-engine/scenery/vehicles';
 
 /**
  * A turntable: the hamster in its ball by default, or any sculpted model
  * (`?model=sedan`; `?models=sedan,pickup` puts several in a row). `?paint=`
- * colours a vehicle; `?yaw`, `?zoom`, `?pitch` place the view; `?still`
- * stops it turning; `?day` lights it plainly.
+ * colours a vehicle; `?drive` puts a vehicle's wheels on it to go round
+ * and steer (`?steer=0.4` holds them turned); `?yaw`, `?zoom`, `?pitch`
+ * place the view; `?still` stops it turning; `?day` lights it plainly.
  */
 
 const q = new URLSearchParams(location.search);
@@ -28,10 +30,26 @@ if (names.length) {
   for (const n of names) {
     const def = MODELS[n];
     if (!def) throw new Error(`no model ${n}`);
-    const { geometry } = bake(GFX, def);
+    const drive = q.has('drive') && def.body;
+    const { geometry } = bake(GFX, drive ? def.body : def);
     const mats = materialsOf(GFX, def, q.has('paint') ? { paint: { color: `#${q.get('paint')}` } } : {});
     const mesh = new GFX.Mesh(geometry, mats);
     mesh.castShadow = mesh.receiveShadow = true;
+    if (drive) {
+      const wheel = MODELS[def.wheel];
+      const wheels = mountWheels(GFX, def, { geometry: bake(GFX, wheel).geometry, material: materialsOf(GFX, wheel) });
+      mesh.add(wheels.group);
+      const steer = Number(q.get('steer') ?? NaN);
+      let t = 0;
+      const was = globalThis.tick;
+      globalThis.tick = (dt) => {
+        was?.(dt);
+        t += dt;
+        // Two tiles a second, round a bend that comes and goes (or held at `steer`).
+        const bend = Number.isFinite(steer) ? Math.tan(steer) / 1.1 : Math.sin(t * 0.8) * 0.4;
+        wheels.drive(2 * dt, bend * 2 * dt);
+      };
+    }
     mesh.position.x = x;
     scene.add(mesh);
     x += Number(q.get('gap') ?? 3.2);
