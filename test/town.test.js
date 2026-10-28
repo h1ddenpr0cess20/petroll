@@ -169,6 +169,23 @@ test('every prop is one that can be drawn, and draws', () => {
   assert.ok(n > 10000);
 });
 
+test("the textured panels face the way they're lit: their front, the side that is drawn, is outside", () => {
+  const { group } = drawStructures(GFX, town, () => [1, 1, 1]);
+  let n = 0;
+  group.traverse((m) => {
+    if (!m.name?.startsWith('panels-')) return;
+    const p = m.geometry.attributes.position.array, nn = m.geometry.attributes.normal.array;
+    for (let t = 0; t < p.length; t += 9) {
+      const e1 = [p[t + 3] - p[t], p[t + 4] - p[t + 1], p[t + 5] - p[t + 2]];
+      const e2 = [p[t + 6] - p[t], p[t + 7] - p[t + 1], p[t + 8] - p[t + 2]];
+      const g = [e1[1] * e2[2] - e1[2] * e2[1], e1[2] * e2[0] - e1[0] * e2[2], e1[0] * e2[1] - e1[1] * e2[0]];
+      assert.ok(g[0] * nn[t] + g[1] * nn[t + 1] + g[2] * nn[t + 2] > 0, `${m.name}: a panel wound inside out`);
+      n++;
+    }
+  });
+  assert.ok(n > 1000);
+});
+
 test('nothing solid stands in the road', () => {
   const road = (x, z) => ['road', 'highway'].includes(town.cell(Math.floor(x), Math.floor(z))?.surface);
   for (const m of town.models) {

@@ -1,5 +1,6 @@
 import { model } from './models/library.js';
 import { materialsOf } from 'madness-engine/models/legacy-bake';
+import { mountWheels } from 'madness-engine/scenery/vehicles';
 
 /**
  * The traffic: cars, trucks and tankers driving round the roads of the
@@ -12,6 +13,10 @@ import { materialsOf } from 'madness-engine/models/legacy-bake';
  * car, which it waits behind, or (in town, where drivers look) the
  * hamster, which it brakes for and honks at. On the interstate nobody
  * brakes for anything.
+ *
+ * Near the camera a car is its body with its wheels on, and they roll as
+ * it goes and steer round the corners; further off it is its lighter
+ * version, wheels and all, and they don't (it doesn't show at that size).
  */
 
 export const KINDS = Object.freeze({
@@ -79,6 +84,15 @@ export function createTraffic(GFX, map, world) {
   const group = new GFX.Group();
   group.name = 'traffic';
   const looks = new Map();
+  /** Each kind of wheel's mesh, to copy: one bake, one set of materials. */
+  const wheelMeshes = new Map();
+  const wheelMesh = (name) => {
+    if (!wheelMeshes.has(name)) {
+      const { geometry, def } = model(GFX, name);
+      wheelMeshes.set(name, { geometry, material: materialsOf(GFX, def) });
+    }
+    return wheelMeshes.get(name);
+  };
   const cars = [];
   let id = 0;
   for (const [ri, road] of map.roads.entries()) {
@@ -87,18 +101,21 @@ export function createTraffic(GFX, map, world) {
       const kind = road.kind === 'truck' && i % 2 && !road.open ? 'tanker' : road.kind;
       const paint = PAINT[(ri * 3 + i * 7) % PAINT.length];
       const which = KINDS[kind].models[(ri + i) % KINDS[kind].models.length];
-      const { geometry, def } = model(GFX, which);
+      const { def } = model(GFX, which);
       const far = model(GFX, `${which}-far`).geometry;
+      const body = model(GFX, def.body.name).geometry;
+      const wheels = mountWheels(GFX, def, wheelMesh(def.wheel));
       const key = `${which}${paint}`;
       if (!looks.has(key)) looks.set(key, materialsOf(GFX, def, { paint: { color: paint } }));
-      const mesh = new GFX.Mesh(geometry, looks.get(key));
+      const mesh = new GFX.Mesh(body, looks.get(key));
       mesh.castShadow = true;
       mesh.receiveShadow = true;
+      mesh.add(wheels.group);
       group.add(mesh);
       const size = which === 'pickup' ? { ...KINDS.car, length: 2.1 } : which === 'hatchback' ? { ...KINDS.car, length: 1.7 } : KINDS[kind];
       const box = { solid: true, kind: 'car', vx: 0, vy: 0, vz: 0, min: [0, 0, 0], max: [0, 0, 0] };
       cars.push({
-        id: id++, road, path, kind, size, mesh, box, near: geometry, far,
+        id: id++, road, path, kind, size, mesh, box, near: body, far, wheels, went: 0, yaw: null,
         s: (path.length * i) / road.cars, v: road.speed,
         x: 0, y: 0, z: 0, dx: 0, dz: 1, honked: 0,
       });
@@ -161,6 +178,7 @@ export function createTraffic(GFX, map, world) {
         c.honked -= dt;
         c.v += Math.max(-BRAKE * dt, Math.min(ACCEL * dt, want - c.v));
         c.s += c.v * dt;
+        c.went += c.v * dt;
         if (c.path.open && c.s > c.path.length) c.s -= c.path.length;
         place(c, dt);
       }
@@ -170,9 +188,17 @@ export function createTraffic(GFX, map, world) {
     /** Meshes to match, once a frame; the cars more than `NEAR` from `eye` (where the camera looks) in their lighter versions. */
     sync(eye = null) {
       for (const c of cars) {
-        c.mesh.geometry = eye && Math.hypot(c.x - eye.x, c.z - eye.z) > NEAR ? c.far : c.near;
+        const near = !eye || Math.hypot(c.x - eye.x, c.z - eye.z) <= NEAR;
+        c.mesh.geometry = near ? c.near : c.far;
         c.mesh.position.set(c.x, c.y, c.z);
-        c.mesh.rotation.y = Math.atan2(c.dx, c.dz);
+        const yaw = Math.atan2(c.dx, c.dz);
+        c.mesh.rotation.y = yaw;
+        // The wheels: round by how far it went since the last frame, steered by how far it turned (a wrap to the start of an open road is neither).
+        const turned = c.yaw === null ? 0 : Math.atan2(Math.sin(yaw - c.yaw), Math.cos(yaw - c.yaw));
+        c.yaw = yaw;
+        c.wheels.group.visible = near;
+        if (near) c.wheels.drive(c.went, Math.abs(turned) < 0.5 ? turned : 0);
+        c.went = 0;
       }
     },
 
