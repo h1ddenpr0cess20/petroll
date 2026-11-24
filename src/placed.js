@@ -4,11 +4,11 @@ import { model } from './models/library.js';
 /**
  * The sculpted models standing about the map, drawn: every copy of a model
  * near each other merged into one mesh (turned, scaled and moved into place, its paint
- * mixed into its colours), with the night's light baked into it from the
+ * mixed into its colors), with the night's light baked into it from the
  * lamps round about, the way it is into the ground under it.
  */
 const CHUNK = 16;
-const NO_SHADOW = new Set(['seed', 'shrub', 'rock', 'cone', 'tyres', 'hydrant']);
+const NO_SHADOW = new Set(['seed', 'shrub', 'rock', 'cone', 'tires', 'hydrant']);
 
 export function createPlaced(GFX, map, light) {
   const group = new GFX.Group();
@@ -27,7 +27,7 @@ export function createPlaced(GFX, map, light) {
 /**
  * Copies of one model — each `{ x, y, z, angle, scale, paint }` — merged into
  * one mesh: turned, scaled and moved into place, paint mixed into the
- * paint material's colours, and `light(x, y, z)` baked in.
+ * paint material's colors, and `light(x, y, z)` baked in.
  */
 export function mergeCopies(GFX, name, copies, light) {
   const { def, data, materials } = model(GFX, name);

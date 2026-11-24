@@ -1,6 +1,6 @@
 /**
  * Finding a way across the town, tile by tile, the way the bubble can go:
- * on to a neighbouring tile that is level with this one or a curb higher at
+ * on to a neighboring tile that is level with this one or a curb higher at
  * most, or down off one no further than `drop`; never through anything
  * solid; round tar, and the interstate, and oil and the pumpjacks' heads
  * and the flares unless there is no other way. A*, eight ways.
@@ -8,7 +8,7 @@
 
 const CLIMB = 0.16;
 
-/** The heights along the edge a tile shares with its neighbour (dx, dz): mine, then theirs. */
+/** The heights along the edge a tile shares with its neighbor (dx, dz): mine, then theirs. */
 function edge(c, n, dx, dz) {
   const H = c.h, N = n.h;
   if (dx === 1) return [[H[1], H[3]], [N[0], N[2]]];
@@ -136,7 +136,7 @@ export function createPlanner(map, { drop = 2.2, radius = 0.36 } = {}) {
     return !blocked(x + 0.5, z + 0.5, x + dx + 0.5, z + dz + 0.5, y);
   };
 
-  /** The way from (x0, z0) to (x1, z1), as tile centres; null if there isn't one. */
+  /** The way from (x0, z0) to (x1, z1), as tile centers; null if there isn't one. */
   function find([x0, z0], [x1, z1]) {
     const sx = Math.floor(x0), sz = Math.floor(z0), tx = Math.floor(x1), tz = Math.floor(z1);
     const start = sz * cols + sx, goal = tz * cols + tx;

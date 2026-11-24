@@ -99,7 +99,7 @@ export async function createStage(host) {
   });
 
   // Opaque all round: the glass refracts whatever is behind it, and over
-  // nothing at all it would bend the renderer's stand-in grey.
+  // nothing at all it would bend the renderer's stand-in gray.
   const sky = paintSky(domeU);
   const skyMap = sky ? new GFX.CanvasTexture(sky) : null;
   if (skyMap) skyMap.colorSpace = GFX.SRGBColorSpace;

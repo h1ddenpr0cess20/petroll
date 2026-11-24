@@ -2,7 +2,7 @@ import { TINTS } from 'madness-engine/heroes/hamster';
 
 /**
  * The bubble shop: what the jobs' pay (and the loose change from knocking
- * things over) buys. New plastic for the ball, in colours; and three
+ * things over) buys. New plastic for the ball, in colors; and three
  * things that make a difference — a thicker shell (knocks cost less),
  * a better wheel (the dash comes back quicker), grippier treads (oil and
  * wet floors hardly matter).

@@ -104,7 +104,7 @@ all of them, are kept with the rest.
 ### The bubble shop
 
 On the forecourt of the Gas 'n' Go and at the truck stop: new plastic for
-the ball (eight colours, Solid Gold the dearest), and three things that make
+the ball (eight colors, Solid Gold the dearest), and three things that make
 a difference — **Grippy Treads** (oil and wet floors hardly matter), a
 **Turbo Wheel** (the dash comes back twice as fast) and a **Thick Shell**
 (knocks cost 40% less). Cones, bins, crates, flamingos and yard signs are

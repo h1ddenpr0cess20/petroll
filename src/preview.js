@@ -8,7 +8,7 @@ import { mountWheels } from 'madness-engine/scenery/vehicles';
 /**
  * A turntable: the hamster in its ball by default, or any sculpted model
  * (`?model=sedan`; `?models=sedan,pickup` puts several in a row). `?paint=`
- * colours a vehicle; `?drive` puts a vehicle's wheels on it to go round
+ * colors a vehicle; `?drive` puts a vehicle's wheels on it to go round
  * and steer (`?steer=0.4` holds them turned); `?yaw`, `?zoom`, `?pitch`
  * place the view; `?still` stops it turning; `?day` lights it plainly.
  */

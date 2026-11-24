@@ -40,7 +40,7 @@ export function work(c, { P }) {
   const LAP_GATES = lap(9).slice(1);
   // ── The townsfolk ──────────────────────────────────────────────────────
   c.giver('penny', 'Mr. Pennywhistle', 14.6, 18.6, { look: 'tourist', line: "Back from the Grand Canyon. It's a big hole. Anyway: a job?" });
-  c.giver('mayor', 'Mayor Whiskers', 55.5, 49.5, { look: 'gent', line: 'Vote Whiskers! Er, I mean: I have a little favour to ask.' });
+  c.giver('mayor', 'Mayor Whiskers', 55.5, 49.5, { look: 'gent', line: 'Vote Whiskers! Er, I mean: I have a little favor to ask.' });
   c.giver('hoss', 'Foreman Hoss', 85.4, 32.6, { look: 'security', line: 'Hard hats on. Well, hard balls.' });
   c.giver('gus', 'Gus', 109.3, 46.5, { look: 'cabbie', line: "Fill 'er up? Nah, I need a hand." });
   c.giver('walt', 'Wildcat Walt', 52.5, 69.6, { look: 'archaeologist', line: 'Forty years I been digging for oil in this field. Found a lot of oil.' });
@@ -59,7 +59,7 @@ export function work(c, { P }) {
   c.critter('poodle', 221, 41.5, { y: BARON.top, angle: -0.5 });
   c.critter('cat-ginger', 171.5, 38.6, { size: 0.7 });
   c.critter('cat-black', 102.5, 24, { size: 0.7, clip: 'sleep' });
-  c.critter('cat-grey', 127, 19.5, { size: 0.7 });
+  c.critter('cat-gray', 127, 19.5, { size: 0.7 });
   c.critter('cat-calico', 124.5, 76, { size: 0.65 });
   c.critter('cat-siamese', 219, 39.2, { size: 0.65, y: BARON.top });
   c.critter('cat-tom', 225, 74, { size: 0.6, clip: 'sleep' });
@@ -98,7 +98,7 @@ export function work(c, { P }) {
   });
   c.job({
     id: 'taxman', giver: 'mayor', after: 'signs', title: 'The Tax Man Cometh', reward: 220, time: 60,
-    brief: "The county tax collector is circling downtown in that grey sedan. Ram it till he gives up and goes home. I never asked you this.",
+    brief: "The county tax collector is circling downtown in that gray sedan. Ram it till he gives up and goes home. I never asked you this.",
     stages: [{ type: 'ram', text: "Ram the tax man's car", hits: 5, model: 'sedan', paint: '#8a8f9a', speed: 4.4, route: [[47, 29], [47, 55], [89, 55], [89, 29]] }],
   });
 

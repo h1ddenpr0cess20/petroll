@@ -122,7 +122,7 @@ test('districts: where a point is', () => {
   assert.equal(c.districtAt(25, 5), null);
 });
 
-test('colours are linear', () => {
+test('colors are linear', () => {
   assert.deepEqual(linearRGB('#ffffff'), [1, 1, 1]);
   assert.deepEqual(linearRGB('#000000'), [0, 0, 0]);
   assert.ok(Math.abs(linearRGB('#808080')[0] - 0.2158605) < 1e-6);

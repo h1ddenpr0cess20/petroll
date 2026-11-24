@@ -54,7 +54,7 @@ export function createJobView(GFX, run) {
 
   const beamGeometry = new GFX.CylinderGeometry(0.16, 0.42, 16, 16, 1, true);
   beamGeometry.translate(0, 8, 0);
-  const beam = (colour, opacity = 0.18) => new GFX.Mesh(beamGeometry, new GFX.MeshBasicMaterial({ name: 'beam', color: new GFX.Color(colour), transparent: true, opacity, depthWrite: false, blending: GFX.AdditiveBlending, side: GFX.DoubleSide }));
+  const beam = (color, opacity = 0.18) => new GFX.Mesh(beamGeometry, new GFX.MeshBasicMaterial({ name: 'beam', color: new GFX.Color(color), transparent: true, opacity, depthWrite: false, blending: GFX.AdditiveBlending, side: GFX.DoubleSide }));
   const sprite = (texture, scale) => {
     const s = new GFX.Sprite(new GFX.SpriteMaterial({ map: texture, transparent: true, depthWrite: false }));
     s.scale.setScalar(scale);
@@ -227,8 +227,8 @@ export function createJobView(GFX, run) {
       const body = model(GFX, m.def.body.name);
       const mesh = new GFX.Mesh(body.geometry, materialsOf(GFX, body.def, { paint: { color: a.mover.paint } }));
       mesh.castShadow = true;
-      const tyre = model(GFX, m.def.wheel);
-      const wheels = mountWheels(GFX, m.def, { geometry: tyre.geometry, material: materialsOf(GFX, tyre.def) });
+      const tire = model(GFX, m.def.wheel);
+      const wheels = mountWheels(GFX, m.def, { geometry: tire.geometry, material: materialsOf(GFX, tire.def) });
       mesh.add(wheels.group);
       const g = new GFX.Group();
       const flag = sprite(down, 0.8);
