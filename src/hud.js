@@ -102,7 +102,7 @@ export function createHud(root, { onStart, onNew, onTake, onRetry, onLeave, onCh
     },
 
     /**
-     * The map, every frame: centred on the hamster, turned to the camera's
+     * The map, every frame: centerd on the hamster, turned to the camera's
      * `yaw`, `span` tiles across, with the cars, the pumps, the shops,
      * the townsfolk with work going, and what the job under way is after —
      * pinned to the rim when it's further off than the map shows.

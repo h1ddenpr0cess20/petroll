@@ -102,7 +102,7 @@ export class TownMap {
   }
 
   /**
-   * A building: walls `h` high in `wall`'s colour, and a roof on top —
+   * A building: walls `h` high in `wall`'s color, and a roof on top —
    * flat, or pitched along `ridge` ('x' or 'z') rising `pitch` to the
    * ridge line.
    */
@@ -113,7 +113,7 @@ export class TownMap {
       this.surface(x, z, w, d, (X, Z) => h + pitch * (1 - across(X, Z)), { surface: surface ?? 'roof', wall });
     }
     if (facade) {
-      // Its walls drawn as a building's face, storey by storey from `base`; a door in the middle of side `door`.
+      // Its walls drawn as a building's face, story by story from `base`; a door in the middle of side `door`.
       for (let j = z; j < z + d; j++) for (let i = x; i < x + w; i++) {
         const c = this.cell(i, j);
         const mid = (door === 'n' || door === 's') ? i === x + Math.floor(w / 2) : j === z + Math.floor(d / 2);
@@ -125,9 +125,9 @@ export class TownMap {
     return this;
   }
 
-  /** Paint on the ground: a rectangle of `colour`, lying on whatever is under it. */
-  mark(x, z, w, d, colour = '#f2f0e8') {
-    this.marks.push({ x, z, w, d, colour });
+  /** Paint on the ground: a rectangle of `color`, lying on whatever is under it. */
+  mark(x, z, w, d, color = '#f2f0e8') {
+    this.marks.push({ x, z, w, d, color });
     return this;
   }
 
@@ -156,9 +156,9 @@ export class TownMap {
           Math.max(...corners.map((q) => q[0])), base + y1 * scale, Math.max(...corners.map((q) => q[1])));
       }
     }
-    for (const [lx, ly, lz, colour, reach] of def.lights ?? []) {
+    for (const [lx, ly, lz, color, reach] of def.lights ?? []) {
       const [wx, wz] = at(lx, lz);
-      this.lamp(wx, wz, { colour, reach, height: ly * scale, y: base });
+      this.lamp(wx, wz, { color, reach, height: ly * scale, y: base });
     }
     this.models.push({ name, x, z, y: base, angle, scale, paint });
     return this;
@@ -183,13 +183,13 @@ export class TownMap {
   }
 
   /** A deck on stilts (a bridge, a catwalk, a roof) the tiles under it pass beneath: solid, and drawn. A `roof` fades while the hamster is under it. */
-  deck(x, z, w, d, h, { thick = 0.3, colour = '#9a9a9e', roof = false } = {}) {
-    this.decks.push({ x, z, w, d, h, thick, colour, roof });
+  deck(x, z, w, d, h, { thick = 0.3, color = '#9a9a9e', roof = false } = {}) {
+    this.decks.push({ x, z, w, d, h, thick, color, roof });
     return this.solid(x, h - thick, z, x + w, h, z + d);
   }
 
   /**
-   * A loop the traffic drives round: tile-centre points in order, `cars`
+   * A loop the traffic drives round: tile-center points in order, `cars`
    * spaced evenly round it at `speed` tiles a second. `kind` is what
    * drives it: 'car', 'truck' or 'tanker'. A road `over` a bridge drives
    * up on its deck.
@@ -285,17 +285,17 @@ export class TownMap {
 
   /**
    * A light: a lamp head `height` above the ground at (x, z), throwing
-   * `colour` over `reach` tiles. Its glow is baked into the ground and the
+   * `color` over `reach` tiles. Its glow is baked into the ground and the
    * walls round it, and the lamps nearest the hamster light it for real.
    */
-  lamp(x, z, { colour = '#ffb35a', reach = 6, height = 3, glow = 1, y = null } = {}) {
-    this.lamps.push({ x, z, colour, reach, height, glow, y });
+  lamp(x, z, { color = '#ffb35a', reach = 6, height = 3, glow = 1, y = null } = {}) {
+    this.lamps.push({ x, z, color, reach, height, glow, y });
     return this;
   }
 
   /** A named part of the map, for the banner when the hamster first rolls in and for the minimap. */
-  district(name, x, z, w, d, colour) {
-    this.districts.push({ name, x, z, w, d, colour });
+  district(name, x, z, w, d, color) {
+    this.districts.push({ name, x, z, w, d, color });
     return this;
   }
 
@@ -371,7 +371,7 @@ export const AMBIENT = Object.freeze([0.3, 0.32, 0.46]);
 export function bakeLight(map) {
   const lamps = map.lamps.map((l) => {
     const y = (l.y ?? map.heightAt(l.x, l.z) ?? 0) + l.height;
-    return { x: l.x, y, z: l.z, reach: l.reach, colour: linearRGB(l.colour).map((v) => v * l.glow * 2.4) };
+    return { x: l.x, y, z: l.z, reach: l.reach, color: linearRGB(l.color).map((v) => v * l.glow * 2.4) };
   });
   // Bucketed, so each point only looks at the lamps near it.
   const B = 8, buckets = new Map();
@@ -390,7 +390,7 @@ export function bakeLight(map) {
       const d = Math.hypot(x - l.x, (y - l.y) * 0.6, z - l.z);
       if (d >= l.reach) continue;
       const k = (1 - d / l.reach) ** 2;
-      out[0] += l.colour[0] * k; out[1] += l.colour[1] * k; out[2] += l.colour[2] * k;
+      out[0] += l.color[0] * k; out[1] += l.color[1] * k; out[2] += l.color[2] * k;
     }
     return out.map((v) => Math.min(1.8, v));
   };
@@ -424,10 +424,10 @@ export function buildMap(map) {
     return m.get(k);
   };
   const light = bakeLight(map);
-  const colours = new Map();
-  const colour = (hex) => {
-    if (!colours.has(hex)) colours.set(hex, linearRGB(hex));
-    return colours.get(hex);
+  const colors = new Map();
+  const color = (hex) => {
+    if (!colors.has(hex)) colors.set(hex, linearRGB(hex));
+    return colors.get(hex);
   };
   const lit = (base, p) => {
     const l = light(p[0], p[1], p[2]);
@@ -479,9 +479,9 @@ export function buildMap(map) {
   };
 
   /**
-   * A building's wall: whole to the physics; to the mesh in bands a storey
+   * A building's wall: whole to the physics; to the mesh in bands a story
    * high from the building's foot, each with the whole facade texture on it
-   * — the door's on the bottom storey where there is one, the plain gable
+   * — the door's on the bottom story where there is one, the plain gable
    * above the eaves.
    */
   const facadeWall = (f, side, p0, p1, poly, out, base) => {
@@ -496,12 +496,12 @@ export function buildMap(map) {
       if (!facing(a, b, cc)) [b, cc] = [cc, b];
       world.addTriangle(...a, ...b, ...cc);
     }
-    const storey = FACADES[f.style].storey;
+    const story = FACADES[f.style].story;
     const highY = Math.max(...poly.map((p) => p[1]));
     // Faces read left to right from outside: flip u on the sides where the edge runs the other way.
     const flip = side === 'n' || side === 'e';
-    for (let y0 = f.base, k = 0; y0 < highY - 1e-4; y0 += storey, k++) {
-      const band = clip(clip(poly, (p) => p[1] - y0), (p) => y0 + storey - p[1]);
+    for (let y0 = f.base, k = 0; y0 < highY - 1e-4; y0 += story, k++) {
+      const band = clip(clip(poly, (p) => p[1] - y0), (p) => y0 + story - p[1]);
       if (band.length < 3) continue;
       const style = y0 >= f.top - 1e-3 ? (f.style === 'house' ? 'gable' : f.style) : k === 0 && f.door === side ? (f.style === 'house' ? 'house-door' : f.style) : f.style;
       const bp = band.map(([t, y]) => at(t, y));
@@ -512,7 +512,7 @@ export function buildMap(map) {
         const vs = [0, ib, ic];
         face(layer(walls, `facade:${style}`), bp[0], bp[ib], bp[ic], n,
           vs.map((v) => lit(base, bp[v])),
-          vs.map((v) => [flip ? 1 - band[v][0] : band[v][0], 1 - (band[v][1] - y0) / storey]));
+          vs.map((v) => [flip ? 1 - band[v][0] : band[v][0], 1 - (band[v][1] - y0) / story]));
       }
     }
   };
@@ -524,7 +524,7 @@ export function buildMap(map) {
       const kind = surfaceOf(c);
       const [h00, h10, h01, h11] = c.h;
       const tint = 0.92 + 0.08 * hash(x, z);
-      const col = colour(c.top ?? kind.top).map((v) => v * tint);
+      const col = color(c.top ?? kind.top).map((v) => v * tint);
       const A = [x, h00, z], B = [x + 1, h10, z], C = [x, h01, z + 1], D = [x + 1, h11, z + 1];
       // Each tile turned and flipped its own way where the texture has no grain, so it doesn't repeat.
       const spin = TURNS.has(kind.tex) ? Math.floor(hash(z, x) * 8) : 0;
@@ -542,7 +542,7 @@ export function buildMap(map) {
       world.addTriangle(...B, ...C, ...D);
 
       // The sides: down to the next tile, or into the ground.
-      const wallBase = colour(c.wall ?? kind.wall);
+      const wallBase = color(c.wall ?? kind.wall);
       const key = c.hidden ? null : c.wtex ?? kind.wtex;
       const low = Math.min(...c.h) - DEPTH;
       const edges = [

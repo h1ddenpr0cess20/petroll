@@ -241,15 +241,15 @@ function house(c, x, z, w, d, wall, { ridge = 'x', door = 'n' } = {}) {
 }
 
 /** A hedge (or any wall): drawn, and solid. */
-function wall(c, x0, z0, x1, z1, y0, y1, colour, finish = 'matte', tex = null) {
-  c.prop('wall', x0, z0, { x1, z1, y0, y1, colour, finish, tex });
+function wall(c, x0, z0, x1, z1, y0, y1, color, finish = 'matte', tex = null) {
+  c.prop('wall', x0, z0, { x1, z1, y0, y1, color, finish, tex });
   c.solid(x0, y0, z0, x1, y1, z1);
 }
 
 function mapleGrove(c) {
   const walls = ['#e6dccb', '#c9d8e8', '#f0d9a8', '#d8b8c8', '#cfe3c2', '#f2e6d0'];
 
-  // Home, and the neighbours.
+  // Home, and the neighbors.
   block(c, 10, 10, 16, 18);
   house(c, 12, 12, 5, 5, '#f0d9a8');
   house(c, 18, 12, 5, 5, walls[1]);
@@ -410,13 +410,13 @@ function gasStation(c) {
   c.block(96, 57, 6, 1, 2.2, { wall: '#5a9ad8', wtex: 'corrugated' });
   c.block(96, 63, 6, 1, 2.2, { wall: '#5a9ad8', wtex: 'corrugated' });
   c.flat(96, 58, 6, 5, 0, { surface: 'wet' });
-  c.deck(95.8, 56.8, 6.4, 7.4, 2.5, { colour: '#e8e4dc', roof: true });
+  c.deck(95.8, 56.8, 6.4, 7.4, 2.5, { color: '#e8e4dc', roof: true });
   c.prop('carwash', 96, 58, { w: 6, d: 5 });
   c.goldenSeed('Through the car wash', 99, 60.5);
 
   // The footbridge over the interstate, to the billboard on the hill.
   c.slope(101, 34, 10, 2, 0, 2.7, 'x', { surface: 'concrete' });
-  c.deck(111, 34, 11.2, 2, 2.7, { colour: '#a7a39a' });
+  c.deck(111, 34, 11.2, 2, 2.7, { color: '#a7a39a' });
   // Its sides: walls beside the ramp, railings along the deck (the traffic goes under).
   wall(c, 101, 33.8, 111, 34, 0, 3.3, '#5a6068', 'shiny');
   wall(c, 101, 36, 111, 36.2, 0, 3.3, '#5a6068', 'shiny');
@@ -439,7 +439,7 @@ function gasStation(c) {
     c.cylinder(x, z, 0.9, 0, 0.9);
   }
   for (const [x, z] of [[108, 14], [108, 25], [97, 30]]) {
-    c.place('tyres', x, z, { angle: x });
+    c.place('tires', x, z, { angle: x });
   }
   c.seedLine(97, 15, 109, 15, 6).seedLine(103, 22, 103, 30, 4);
 }
@@ -501,7 +501,7 @@ function oilField(c, P) {
   // The derrick: up on the lift to the platform at the top.
   const D = P.derrick, TOP = D + 8;
   c.prop('derrick', 80, 86, { w: 4, d: 4, y: D, top: TOP });
-  c.deck(80, 86, 4, 4, TOP, { colour: '#8a6a42' });
+  c.deck(80, 86, 4, 4, TOP, { color: '#8a6a42' });
   for (const [x, z] of [[80, 86], [83.6, 86], [80, 89.6], [83.6, 89.6]]) c.solid(x, D, z, x + 0.4, TOP - 0.3, z + 0.4);
   c.lift(78, 87, 2, 2, D, { to: [0, 8, 0], period: 9, pause: 0.22 });
   wall(c, 79.9, TOP, 84.1, TOP + 0.5, 85.9, 86.1, '#c8382c');
@@ -546,9 +546,9 @@ function refinery(c) {
 
   /** A tank: the tiles inside its circle at its height, and a drum drawn round them. */
   /** A tank: solid as the cylinder it's drawn as, its roof something to stand on. */
-  const tank = (cx, cz, r, h, colour = '#e8e4dc') => {
+  const tank = (cx, cz, r, h, color = '#e8e4dc') => {
     c.cylinder(cx, cz, r, 0, h);
-    c.prop('tank', cx, cz, { r, h, colour });
+    c.prop('tank', cx, cz, { r, h, color });
   };
   tank(12, 70, 4.5, 3);
   tank(12, 88, 5, 6, '#d8d0c0');
@@ -675,7 +675,7 @@ const BRIDGE = 3.2;
 function overpass(c) {
   c.flat(90, 6, 2, 4, 0, { surface: 'road' });
   c.slope(92, 6, 18, 4, 0, BRIDGE, 'x', { surface: 'road', wall: '#a7a39a' });
-  c.deck(110, 6, 13, 4, BRIDGE, { colour: '#a7a39a' });
+  c.deck(110, 6, 13, 4, BRIDGE, { color: '#a7a39a' });
   c.slope(123, 6, 18, 4, BRIDGE, 0, 'x', { surface: 'road', wall: '#a7a39a' });
   const height = (x) => (x <= 110 ? BRIDGE * (x - 92) / 18 : x >= 123 ? BRIDGE * (141 - x) / 18 : BRIDGE);
   for (const [z0, z1] of [[5.8, 6], [10, 10.2]]) {
@@ -686,7 +686,7 @@ function overpass(c) {
   }
   for (let x = 93; x < 141; x += 2) if (x < 110 || x > 123) c.mark(x, 7.94, 1, 0.12, '#f2c230');
   for (let x = 110.5; x < 123; x += 2) c.mark(x, 7.94, 1, 0.12, '#f2c230');
-  c.lamp(116.5, 8, { colour: '#ffb35a', reach: 7, height: 4.5, y: BRIDGE });
+  c.lamp(116.5, 8, { color: '#ffb35a', reach: 7, height: 4.5, y: BRIDGE });
   c.goldenSeed('On the road bridge', 116.5, 8, { y: BRIDGE });
   c.seedLine(97, 8, 108, 8, 5).seedLine(125, 8, 139, 8, 6);
 }
@@ -791,10 +791,10 @@ function crudeAcres(c) {
   c.flat(183, 22, 2, 24, CURB, { surface: 'gravel' });
   c.flat(166, 11, 2, 9, CURB, { surface: 'gravel' });
   c.flat(166, 48, 2, 11, CURB, { surface: 'gravel' });
-  const colours = ['#f2ead8', '#f0d9a8', '#c9d8e8', '#e8c8d0', '#cfe3c2', '#f4e0b8', '#d8d8e8'];
+  const colors = ['#f2ead8', '#f0d9a8', '#c9d8e8', '#e8c8d0', '#cfe3c2', '#f4e0b8', '#d8d8e8'];
   const trims = ['#2c6ec8', '#c8382c', '#3a8a4a', '#e07a2a', '#6a3a8a', '#1c6a7a', '#8a5a2a'];
   let n = 0;
-  const home = (x, z, o) => mobileHome(c, x, z, { colour: colours[n % colours.length], trim: trims[(n++ * 3) % trims.length], ...o });
+  const home = (x, z, o) => mobileHome(c, x, z, { color: colors[n % colors.length], trim: trims[(n++ * 3) % trims.length], ...o });
   // Outside the loop: along the north, along the south, down either side.
   home(148.5, 12.5, { front: 's', dish: true });
   home(157, 12.5, { front: 's', porch: false });
@@ -896,7 +896,7 @@ function speedway(c) {
     c.flat(148, z, 2, d, 1.2, { surface: 'concrete', wall: '#9aa0aa', wtex: 'block' });
     c.flat(150, z, 1, d, 0.6, { surface: 'concrete', wall: '#9aa0aa', wtex: 'block' });
   }
-  // The start and finish, chequered across the west straight.
+  // The start and finish, checkred across the west straight.
   for (let i = 0; i < 12; i++) for (let j = 0; j < 2; j++) if ((i + j) % 2 === 0) c.mark(153 + i * 0.5, 88.5 + j * 0.5, 0.5, 0.5, '#f4f1ea');
   // In the middle: a jump, the pits.
   c.slope(166, 84, 4, 3, 0, 1.0, 'z', { surface: 'metal', wall: '#5a6068' });
@@ -929,7 +929,7 @@ function quarry(c) {
   parked(c, 'boxtruck', 223, 87.5, { turn: 1, paint: '#e07a2a' });
   for (const [x, z, s] of [[208, 80, 2.4], [228, 98, 2.8], [206, 99, 2.2], [231, 82, 2.0], [221, 104, 2.6]]) c.place('rock', x, z, { scale: s, angle: x });
   for (const [x, z] of [[205, 76], [231, 102], [204, 102]]) c.place('streetlamp', x, z, { angle: Math.atan2(PIT.z - z, PIT.x - x) - Math.PI / 2 });
-  c.lamp(PIT.x, PIT.z, { colour: '#ffd8a0', reach: 8, height: 3.5, y: PIT.floor });
+  c.lamp(PIT.x, PIT.z, { color: '#ffd8a0', reach: 8, height: 3.5, y: PIT.floor });
   c.prop('sign', 214.6, 67, { text: 'BLASTING\nZONE', y: 0 });
   c.goldenSeed('Bottom of the pit', 216, 93.4, { y: PIT.floor });
   c.seedLine(218, 71, 218, 83, 6);

@@ -78,7 +78,7 @@ export function createGame({ stage, hud, input, audio, storage }) {
   const done = () => run.board.done.size;
 
   // The town's lamps, where their light comes from; the nearest few light the hamster for real.
-  const lamps = run.map.lamps.map((l) => ({ ...l, y: (l.y ?? run.map.heightAt(l.x, l.z) ?? 0) + l.height, color: new GFX.Color(l.colour) }));
+  const lamps = run.map.lamps.map((l) => ({ ...l, y: (l.y ?? run.map.heightAt(l.x, l.z) ?? 0) + l.height, color: new GFX.Color(l.color) }));
   let lampTimer = 0;
   /** The real lights to the lamps nearest (x, z). */
   function lightUp(x, z) {

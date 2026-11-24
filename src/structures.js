@@ -24,9 +24,9 @@ function panels(light) {
     if (!layers.has(tex)) layers.set(tex, { position: [], normal: [], color: [], uv: [] });
     return layers.get(tex);
   };
-  const quad = (tex, a, b, c, d, n, colour, uv = [[0, 1], [1, 1], [1, 0], [0, 0]]) => {
+  const quad = (tex, a, b, c, d, n, color, uv = [[0, 1], [1, 1], [1, 0], [0, 0]]) => {
     const out = layer(tex);
-    const base = linearRGB(colour);
+    const base = linearRGB(color);
     for (const [p, t] of [[a, uv[0]], [b, uv[1]], [c, uv[2]], [a, uv[0]], [c, uv[2]], [d, uv[3]]]) {
       out.position.push(...p);
       out.normal.push(...n);
@@ -38,7 +38,7 @@ function panels(light) {
   return {
     layers,
     /** An upright cylinder's side, in panels about a tile wide and a tile high. */
-    cylinder(tex, x, z, r, y0, y1, colour, { band = 1 } = {}) {
+    cylinder(tex, x, z, r, y0, y1, color, { band = 1 } = {}) {
       const n = Math.max(8, Math.round((TAU * r) / 1.2));
       for (let i = 0; i < n; i++) {
         const a0 = (i / n) * TAU, a1 = ((i + 1) / n) * TAU;
@@ -46,12 +46,12 @@ function panels(light) {
         const am = (a0 + a1) / 2, nn = [Math.cos(am), 0, Math.sin(am)];
         for (let y = y0; y < y1 - 1e-4; y += band) {
           const ya = y, yb = Math.min(y1, y + band), v = (yb - ya) / band;
-          quad(tex, [p1[0], ya, p1[1]], [p0[0], ya, p0[1]], [p0[0], yb, p0[1]], [p1[0], yb, p1[1]], nn, colour, [[0, 1], [1, 1], [1, 1 - v], [0, 1 - v]]);
+          quad(tex, [p1[0], ya, p1[1]], [p0[0], ya, p0[1]], [p0[0], yb, p0[1]], [p1[0], yb, p1[1]], nn, color, [[0, 1], [1, 1], [1, 1 - v], [0, 1 - v]]);
         }
       }
     },
     /** One upright face from (x0, z0) to (x1, z1), y0 to y1, facing `n`, in panels a tile across. */
-    face(tex, x0, z0, x1, z1, y0, y1, n, colour, { band = 1 } = {}) {
+    face(tex, x0, z0, x1, z1, y0, y1, n, color, { band = 1 } = {}) {
       // Wound to face `n` whichever way round its ends come: only a face's front is drawn.
       if ((x1 - x0) * n[2] - (z1 - z0) * n[0] < 0) [x0, z0, x1, z1] = [x1, z1, x0, z0];
       const L = Math.hypot(x1 - x0, z1 - z0), cols = Math.max(1, Math.round(L));
@@ -60,20 +60,20 @@ function panels(light) {
         const a = [x0 + (x1 - x0) * t0, z0 + (z1 - z0) * t0], b = [x0 + (x1 - x0) * t1, z0 + (z1 - z0) * t1];
         for (let y = y0; y < y1 - 1e-4; y += band) {
           const ya = y, yb = Math.min(y1, y + band), v = (yb - ya) / band;
-          quad(tex, [a[0], ya, a[1]], [b[0], ya, b[1]], [b[0], yb, b[1]], [a[0], yb, a[1]], n, colour, [[0, 1], [1, 1], [1, 1 - v], [0, 1 - v]]);
+          quad(tex, [a[0], ya, a[1]], [b[0], ya, b[1]], [b[0], yb, b[1]], [a[0], yb, a[1]], n, color, [[0, 1], [1, 1], [1, 1 - v], [0, 1 - v]]);
         }
       }
     },
     /** A box, every side in panels (the top too, if `top`). */
-    box(tex, x0, y0, z0, x1, y1, z1, colour, { top = true, band = 1 } = {}) {
-      this.face(tex, x0, z0, x1, z0, y0, y1, [0, 0, -1], colour, { band });
-      this.face(tex, x1, z1, x0, z1, y0, y1, [0, 0, 1], colour, { band });
-      this.face(tex, x0, z1, x0, z0, y0, y1, [-1, 0, 0], colour, { band });
-      this.face(tex, x1, z0, x1, z1, y0, y1, [1, 0, 0], colour, { band });
+    box(tex, x0, y0, z0, x1, y1, z1, color, { top = true, band = 1 } = {}) {
+      this.face(tex, x0, z0, x1, z0, y0, y1, [0, 0, -1], color, { band });
+      this.face(tex, x1, z1, x0, z1, y0, y1, [0, 0, 1], color, { band });
+      this.face(tex, x0, z1, x0, z0, y0, y1, [-1, 0, 0], color, { band });
+      this.face(tex, x1, z0, x1, z1, y0, y1, [1, 0, 0], color, { band });
       if (top) {
         for (let x = x0; x < x1 - 1e-4; x += 1) for (let z = z0; z < z1 - 1e-4; z += 1) {
           const xa = x, xb = Math.min(x1, x + 1), za = z, zb = Math.min(z1, z + 1);
-          quad(tex, [xa, y1, za], [xa, y1, zb], [xb, y1, zb], [xb, y1, za], [0, 1, 0], colour);
+          quad(tex, [xa, y1, za], [xa, y1, zb], [xb, y1, zb], [xb, y1, za], [0, 1, 0], color);
         }
       }
     },
@@ -81,22 +81,22 @@ function panels(light) {
 }
 
 /** A lattice mast from (x, z) up `h`, `w` square at the foot and `top` at the head, braced in X's every `step`. */
-function lattice(k, x, y, z, w, top, h, step, colour, t = 0.035) {
+function lattice(k, x, y, z, w, top, h, step, color, t = 0.035) {
   const at = (f, i) => {
     const s = (w + (top - w) * f) / 2;
     return [[x - s, z - s], [x + s, z - s], [x + s, z + s], [x - s, z + s]][i];
   };
   for (let i = 0; i < 4; i++) {
     const a = at(0, i), b = at(1, i);
-    k.beam([a[0], y, a[1]], [b[0], y + h, b[1]], t * 1.6, colour, { finish: 'shiny' });
+    k.beam([a[0], y, a[1]], [b[0], y + h, b[1]], t * 1.6, color, { finish: 'shiny' });
   }
   for (let e = 0; e < h - 1e-4; e += step) {
     const f0 = e / h, f1 = Math.min(1, (e + step) / h);
     for (let i = 0; i < 4; i++) {
       const a0 = at(f0, i), b0 = at(f0, (i + 1) % 4), a1 = at(f1, i), b1 = at(f1, (i + 1) % 4);
-      k.beam([a0[0], y + e, a0[1]], [b0[0], y + e, b0[1]], t, colour);
-      k.beam([a0[0], y + e, a0[1]], [b1[0], y + Math.min(h, e + step), b1[1]], t * 0.8, colour);
-      k.beam([b0[0], y + e, b0[1]], [a1[0], y + Math.min(h, e + step), a1[1]], t * 0.8, colour);
+      k.beam([a0[0], y + e, a0[1]], [b0[0], y + e, b0[1]], t, color);
+      k.beam([a0[0], y + e, a0[1]], [b1[0], y + Math.min(h, e + step), b1[1]], t * 0.8, color);
+      k.beam([b0[0], y + e, b0[1]], [a1[0], y + Math.min(h, e + step), a1[1]], t * 0.8, color);
     }
   }
 }
@@ -155,12 +155,12 @@ const DRAW = {
   wall(k, t, p) {
     if (p.tex) {
       const top = p.tex !== 'hedge';
-      t.box(p.tex, p.x, p.y0, p.z, p.x1, p.y1, p.z1, p.colour, { top, band: Math.max(0.5, p.y1 - p.y0) });
+      t.box(p.tex, p.x, p.y0, p.z, p.x1, p.y1, p.z1, p.color, { top, band: Math.max(0.5, p.y1 - p.y0) });
       if (!top) {
         // A hedge: rounded along the top with leafy lumps.
         for (let x = p.x + 0.2; x < p.x1; x += 0.45) for (let z = p.z + 0.2; z < p.z1; z += 0.45) k.sphere([x, p.y1 - 0.05, z], 0.26, '#3e7a32', { scale: [1, 0.6, 1] });
       }
-    } else k.slab(p.x, p.y0, p.z, p.x1, p.y1, p.z1, p.colour, { finish: p.finish });
+    } else k.slab(p.x, p.y0, p.z, p.x1, p.y1, p.z1, p.color, { finish: p.finish });
   },
 
   chair(k, t, p, y) {
@@ -243,7 +243,7 @@ const DRAW = {
       k.cyl([cx, h / 2, cz], 0.16, h, '#e8e4dc', { finish: 'shiny', segments: 16 });
       k.cyl([cx, 0.35, cz], 0.22, 0.7, RED, { segments: 16, finish: 'shiny' });
     }
-    for (let i = 1; i < 5; i++) for (let j = 1; j < 5; j++) map.lamp(x + (w * i) / 5, z + (d * j) / 5, { colour: '#f4f6ff', reach: 3.4, height: h - 0.1, y: 0, glow: 0.45 });
+    for (let i = 1; i < 5; i++) for (let j = 1; j < 5; j++) map.lamp(x + (w * i) / 5, z + (d * j) / 5, { color: '#f4f6ff', reach: 3.4, height: h - 0.1, y: 0, glow: 0.45 });
   },
 
   carwash(k, t, p) {
@@ -273,7 +273,7 @@ const DRAW = {
       k.beam([p.x - 0.4, y + 2.95, p.z + s], [p.x - 0.75, y + 3.15, p.z + s], 0.025, '#5a6068');
       k.box([p.x - 0.78, y + 3.18, p.z + s], [0.2, 0.1, 0.24], '#2a2c30');
       k.box([p.x - 0.73, y + 3.24, p.z + s], [0.04, 0.06, 0.2], '#fff4d8', { finish: 'glow' });
-      map.lamp(p.x - 0.7, p.z + s, { colour: '#fff0d0', reach: 3.2, height: 3.3, y, glow: 0.8 });
+      map.lamp(p.x - 0.7, p.z + s, { color: '#fff0d0', reach: 3.2, height: 3.3, y, glow: 0.8 });
     }
   },
 
@@ -290,8 +290,8 @@ const DRAW = {
   },
 
   trailer(k, t, p) {
-    const { x, z, w, d, y, colour = '#e8e4dc', stripe = '#2c6ec8' } = p;
-    t.box('corrugated', x, y + 0.3, z, x + w, y + 1.6, z + d, colour, { band: 1.3 });
+    const { x, z, w, d, y, color = '#e8e4dc', stripe = '#2c6ec8' } = p;
+    t.box('corrugated', x, y + 0.3, z, x + w, y + 1.6, z + d, color, { band: 1.3 });
     k.slab(x - 0.02, y + 0.95, z - 0.02, x + w + 0.02, y + 1.05, z + d + 0.02, stripe);
     k.slab(x + 0.8, y + 0.4, z + d + 0.01, x + 1.4, y + 1.4, z + d + 0.04, '#8a8f9a', { finish: 'shiny' });
     k.slab(x + 2.4, y + 0.85, z + d + 0.01, x + 3.4, y + 1.3, z + d + 0.04, '#ffe6a8', { finish: 'glow' });
@@ -342,9 +342,9 @@ const DRAW = {
   },
 
   tank(k, t, p, y, map) {
-    const { x, z, r, h, colour } = p;
-    // Welded plates all round, a shallow domed roof, a handrail round its rim, a ladder cage up the side, a band of colour.
-    t.cylinder('tankshell', x, z, r, 0, h, colour, { band: 1 });
+    const { x, z, r, h, color } = p;
+    // Welded plates all round, a shallow domed roof, a handrail round its rim, a ladder cage up the side, a band of color.
+    t.cylinder('tankshell', x, z, r, 0, h, color, { band: 1 });
     const seg = 40;
     for (let i = 0; i < 6; i++) k.cyl([x, h + 0.02 + i * 0.03, z], r * (1 - i * 0.12), 0.04, '#b8bec6', { segments: seg });
     k.torus([x, h, z], r, 0.06, '#9aa0a8', { rot: [Math.PI / 2, 0, 0] });
@@ -358,7 +358,7 @@ const DRAW = {
     for (const s of [-0.24, 0.24]) k.cyl([lx, h / 2, z + s], 0.025, h, '#5a6068', { segments: 6 });
     for (let yy = 0.3; yy < h; yy += 0.32) k.cyl([lx, yy, z], 0.014, 0.48, '#5a6068', { rot: [Math.PI / 2, 0, 0], segments: 4 });
     for (let yy = 2; yy < h; yy += 0.6) k.torus([lx - 0.2, yy, z], 0.32, 0.015, '#5a6068', { rot: [Math.PI / 2, 0, 0] });
-    map.lamp(x - r - 0.3, z, { colour: '#ffcf8a', reach: 4.5, height: Math.min(h, 3.2), y: 0, glow: 0.7 });
+    map.lamp(x - r - 0.3, z, { color: '#ffcf8a', reach: 4.5, height: Math.min(h, 3.2), y: 0, glow: 0.7 });
     void y;
   },
 
@@ -380,7 +380,7 @@ const DRAW = {
     for (let s = 1.5; s < p.h; s += 2.5) k.torus([p.x, y + s, p.z], 0.74, 0.05, RED, { rot: [Math.PI / 2, 0, 0] });
     for (let s = 0.4; s < p.h; s += 0.4) k.cyl([p.x - 0.8, y + s, p.z], 0.012, 0.36, '#5a6068', { rot: [Math.PI / 2, 0, 0] });
     k.cyl([p.x, y + p.h + 0.15, p.z], 0.75, 0.3, '#3a3d44');
-    map.lamp(p.x, p.z, { colour: '#ff9a3a', reach: 9, height: p.h + 1, y, glow: 1.4 });
+    map.lamp(p.x, p.z, { color: '#ff9a3a', reach: 9, height: p.h + 1, y, glow: 1.4 });
   },
 
   piperack(k, t, p) {
@@ -468,11 +468,11 @@ const DRAW = {
     const z0 = p.z - (across ? 0.08 : half), z1 = p.z + (across ? 0.08 : half);
     k.slab(x0 - 0.05, y + p.y, z0 - 0.05, x1 + 0.05, y + p.y + h, z1 + 0.05, '#2a2c30');
     k.slab(x0 - 0.08, y + p.y + h, z0 - 0.08, x1 + 0.08, y + p.y + h + 0.08, z1 + 0.08, '#8a8f9a');
-    map.lamp(p.x + out[0] * 1.2, p.z + out[1] * 1.2, { colour: p.fg ?? '#fff0d0', reach: Math.max(3, w * 0.5), height: p.y + h / 2, y, glow: 0.5 });
+    map.lamp(p.x + out[0] * 1.2, p.z + out[1] * 1.2, { color: p.fg ?? '#fff0d0', reach: Math.max(3, w * 0.5), height: p.y + h / 2, y, glow: 0.5 });
   },
   mobilehome(k, t, p, y, map) {
     // A home in a frame of its own: `len` along `along`, `wid` across, the door and the porch on side `front`.
-    const { x, z, len: L, wid: D, along, front, colour = '#e8e4dc', trim = '#2c6ec8', kind = 'single', porch = true, dish = false } = p;
+    const { x, z, len: L, wid: D, along, front, color = '#e8e4dc', trim = '#2c6ec8', kind = 'single', porch = true, dish = false } = p;
     const alongX = along === 'x';
     const far = front === 's' || front === 'e';
     // (u, v) in the home's own frame — u along it, v back from the front face (negative: out in front) — to the map.
@@ -480,9 +480,9 @@ const DRAW = {
       const across = far ? (alongX ? z : x) + D - v : (alongX ? z : x) + v;
       return alongX ? [x + u, across] : [across, z + u];
     };
-    const box = (u0, v0, u1, v1, y0, y1, colour2, opts) => {
+    const box = (u0, v0, u1, v1, y0, y1, color2, opts) => {
       const [ax, az] = at(u0, v0), [bx, bz] = at(u1, v1);
-      k.slab(Math.min(ax, bx), y0, Math.min(az, bz), Math.max(ax, bx), y1, Math.max(az, bz), colour2, opts);
+      k.slab(Math.min(ax, bx), y0, Math.min(az, bz), Math.max(ax, bx), y1, Math.max(az, bz), color2, opts);
     };
     const lay = alongX ? [0, 0, Math.PI / 2] : [Math.PI / 2, 0, 0];
     const pt = (u, v, h) => { const [px, pz] = at(u, v); return [px, h, pz]; };
@@ -497,7 +497,7 @@ const DRAW = {
       box(L * 0.55 - 0.05, D / 2 - r - 0.6, L * 0.55 + 0.65, D / 2 - r, y + 0.08, y + 0.16, '#8a8f9a');
       for (const v of [D / 2 - r + 0.1, D / 2 + r - 0.1]) k.cyl(pt(L * 0.45, v, y + 0.25), 0.25, 0.14, '#1c1b1f', { rot: alongX ? [Math.PI / 2, 0, 0] : [0, 0, Math.PI / 2], segments: 14 });
       k.beam(pt(0.2, D / 2, y + 0.4), pt(-0.7, D / 2, y + 0.35), 0.05, '#3a3d44');
-      map.lamp(...at(L * 0.55 + 0.3, -0.8), { colour: '#ffd890', reach: 3, height: 1.4, y, glow: 0.6 });
+      map.lamp(...at(L * 0.55 + 0.3, -0.8), { color: '#ffd890', reach: 3, height: 1.4, y, glow: 0.6 });
       return;
     }
     // Skirting round the bottom, slatted.
@@ -505,7 +505,7 @@ const DRAW = {
     for (let u = 0.3; u < L - 0.2; u += 0.35) box(u - 0.03, -0.0, u + 0.03, 0.12, y + 0.02, y + 0.3, '#5a5248');
     // The body, in siding; a band of trim round it; the roof, a low ridge along it.
     const [x0, z0] = at(0, 0), [x1, z1] = at(L, D);
-    t.box('clapboard', Math.min(x0, x1), y + 0.3, Math.min(z0, z1), Math.max(x0, x1), y + 1.7, Math.max(z0, z1), colour, { top: false, band: 1.4 });
+    t.box('clapboard', Math.min(x0, x1), y + 0.3, Math.min(z0, z1), Math.max(x0, x1), y + 1.7, Math.max(z0, z1), color, { top: false, band: 1.4 });
     box(-0.02, -0.02, L + 0.02, D + 0.02, y + 0.92, y + 1.0, trim);
     box(-0.08, -0.08, L + 0.08, D + 0.08, y + 1.7, y + 1.78, '#c8c6c0', { finish: 'shiny' });
     box(0.05, D / 2 - 0.55, L - 0.05, D / 2 + 0.55, y + 1.78, y + 1.86, '#b8b6b0', { finish: 'shiny' });
@@ -531,7 +531,7 @@ const DRAW = {
       box(du + 0.8, -1.27, p1, -1.21, y + 0.76, y + 0.82, '#e8e2d6');
       for (let u = p0 - 0.1, i = 0; u < p1 + 0.1; u += 0.3, i++) box(u, -1.45, Math.min(u + 0.3, p1 + 0.1), 0.02, y + 1.62, y + 1.66, i % 2 ? '#f4f1ea' : trim);
       for (const u of [p0 - 0.05, p1 + 0.05]) box(u - 0.025, -1.42, u + 0.025, -1.37, y + 0.34, y + 1.62, '#c8ccd2', { finish: 'shiny' });
-      map.lamp(...at(du + 0.4, -0.6), { colour: '#ffc870', reach: 3.2, height: 1.4, y, glow: 0.7 });
+      map.lamp(...at(du + 0.4, -0.6), { color: '#ffc870', reach: 3.2, height: 1.4, y, glow: 0.7 });
     }
     // The hitch and the propane at one end; an air conditioner and an aerial on the roof; a dish, maybe.
     k.beam(pt(0, D * 0.3, y + 0.35), pt(-0.9, D / 2, y + 0.3), 0.04, '#3a3d44');
@@ -622,11 +622,11 @@ const DRAW = {
       k.slab(cx - 0.22, y + 0.3, cz - 0.22, cx + 0.22, y + 0.34, cz + 0.22, ['#2c6ec8', '#3a8a4a', '#c8382c'][Math.round(a) % 3]);
       k.beam([cx, y, cz], [cx, y + 0.3, cz], 0.02, '#8a8f9a');
     }
-    map.lamp(x, z, { colour: '#ff9a3a', reach: 3.5, height: 0.6, y, glow: 0.9 });
+    map.lamp(x, z, { color: '#ff9a3a', reach: 3.5, height: 0.6, y, glow: 0.9 });
   },
 
   stringlights(k, t, p, y, map) {
-    // Party lights strung on poles: a line of coloured bulbs sagging between them.
+    // Party lights strung on poles: a line of colored bulbs sagging between them.
     const { points, h = 2.2 } = p;
     const bulbs = ['#ffd890', '#ff8a6a', '#8ad8ff', '#a8ff9a', '#ffa8e8'];
     points.forEach(([px, pz], i) => {
@@ -638,7 +638,7 @@ const DRAW = {
         const f = j / n, sag = Math.sin(f * Math.PI) * 0.35;
         k.sphere([px + (next[0] - px) * f, y + h - 0.05 - sag, pz + (next[1] - pz) * f], 0.05, bulbs[(i + j) % bulbs.length], { finish: 'glow', segments: 8 });
       }
-      map.lamp((px + next[0]) / 2, (pz + next[1]) / 2, { colour: '#ffd0a0', reach: Math.max(3, L * 0.55), height: h - 0.4, y, glow: 0.45 });
+      map.lamp((px + next[0]) / 2, (pz + next[1]) / 2, { color: '#ffd0a0', reach: Math.max(3, L * 0.55), height: h - 0.4, y, glow: 0.45 });
     });
   },
 };
@@ -765,8 +765,8 @@ export function structureLights(map) {
 export const STRUCTURES = Object.keys(DRAW);
 
 /** A metal roof's top from (x0, z0) to (x1, z1) at `y`: standing seams every half tile, a darker flashing round the edge. */
-export function seams(k, x0, z0, x1, z1, y, colour) {
-  const dark = shadeHex(colour, 0.78), light = shadeHex(colour, 1.06);
+export function seams(k, x0, z0, x1, z1, y, color) {
+  const dark = shadeHex(color, 0.78), light = shadeHex(color, 1.06);
   for (let x = x0 + 0.45; x < x1 - 0.2; x += 0.45) k.slab(x - 0.025, y, z0 + 0.08, x + 0.025, y + 0.05, z1 - 0.08, light);
   k.slab(x0 - 0.03, y, z0 - 0.03, x1 + 0.03, y + 0.08, z0 + 0.08, dark);
   k.slab(x0 - 0.03, y, z1 - 0.08, x1 + 0.03, y + 0.08, z1 + 0.03, dark);

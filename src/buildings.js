@@ -24,12 +24,12 @@ export function createBuildings(GFX, map) {
   const glow = { position: [], color: [] };
   const kit = createKit(GFX);
 
-  /** A lit window: a quad over the glass of the tile at `t` along the side, storey `k`. */
+  /** A lit window: a quad over the glass of the tile at `t` along the side, story `k`. */
   const pane = (b, side, i, k, style) => {
     const win = WINDOW[style];
     if (!win) return;
-    const storey = FACADES[style].storey;
-    const y0 = b.base + k * storey + (1 - win.v[1]) * storey, y1 = b.base + k * storey + (1 - win.v[0]) * storey;
+    const story = FACADES[style].story;
+    const y0 = b.base + k * story + (1 - win.v[1]) * story, y1 = b.base + k * story + (1 - win.v[0]) * story;
     if (y1 > b.h + 1e-3) return;
     const lit = hash(b.x * 7 + i, b.z * 13 + k, side.charCodeAt(0)) < b.lit;
     if (!lit) return;
@@ -51,11 +51,11 @@ export function createBuildings(GFX, map) {
 
   for (const b of map.buildings) {
     const style = b.facade;
-    const storey = FACADES[style].storey;
-    const storeys = Math.ceil((b.h - b.base) / storey - 1e-3);
+    const story = FACADES[style].story;
+    const stories = Math.ceil((b.h - b.base) / story - 1e-3);
     for (const [side, len] of [['n', b.w], ['s', b.w], ['w', b.d], ['e', b.d]]) {
       for (let i = 0; i < len; i++) {
-        for (let k = 0; k < storeys; k++) {
+        for (let k = 0; k < stories; k++) {
           const doorHere = k === 0 && b.door === side && i === Math.floor(len / 2);
           if (!doorHere) pane(b, side, i, k, style);
         }
@@ -117,6 +117,6 @@ export function windowLamps(map) {
     if (!b.door) continue;
     const mid = b.door === 'n' || b.door === 's' ? b.x + b.w / 2 : b.door === 'w' ? b.x - 0.6 : b.x + b.w + 0.6;
     const midz = b.door === 'n' ? b.z - 0.6 : b.door === 's' ? b.z + b.d + 0.6 : b.z + b.d / 2;
-    map.lamp(mid, midz, { colour: b.facade === 'shop' ? '#fff4e0' : '#ffc070', reach: b.facade === 'shop' ? 6 : 3.5, height: 1.4, glow: 0.8 });
+    map.lamp(mid, midz, { color: b.facade === 'shop' ? '#fff4e0' : '#ffc070', reach: b.facade === 'shop' ? 6 : 3.5, height: 1.4, glow: 0.8 });
   }
 }

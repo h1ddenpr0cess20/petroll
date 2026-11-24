@@ -47,7 +47,7 @@ export function createWorldMeshes(GFX, map, built) {
   for (const m of map.marks) {
     const y = (map.heightAt(m.x + m.w / 2, m.z + m.d / 2) ?? 0) + 0.012;
     const l = built.light(m.x + m.w / 2, y, m.z + m.d / 2);
-    const c = linearRGB(m.colour).map((v, i) => v * 0.8 * l[i]);
+    const c = linearRGB(m.color).map((v, i) => v * 0.8 * l[i]);
     const quad = [[m.x, m.z], [m.x, m.z + m.d], [m.x + m.w, m.z], [m.x + m.w, m.z], [m.x, m.z + m.d], [m.x + m.w, m.z + m.d]];
     for (const [x, z] of quad) {
       paint.position.push(x, y, z);
@@ -67,10 +67,10 @@ export function createWorldMeshes(GFX, map, built) {
   const roofKits = [];
   for (const d of map.decks) {
     const k = d.roof ? createKit(GFX) : kit;
-    k.slab(d.x, d.h - d.thick, d.z, d.x + d.w, d.h, d.z + d.d, d.colour);
+    k.slab(d.x, d.h - d.thick, d.z, d.x + d.w, d.h, d.z + d.d, d.color);
     k.slab(d.x, d.h - d.thick - 0.12, d.z + 0.1, d.x + d.w, d.h - d.thick, d.z + d.d - 0.1, '#5a6068');
     // A roof: standing seams across it, and flashing round its edge.
-    if (d.roof) seams(k, d.x, d.z, d.x + d.w, d.z + d.d, d.h, d.colour);
+    if (d.roof) seams(k, d.x, d.z, d.x + d.w, d.z + d.d, d.h, d.color);
     if (d.roof) { k.bounds = { x0: d.x, z0: d.z, x1: d.x + d.w, z1: d.z + d.d, y: d.h - d.thick }; roofKits.push(k); }
   }
   const structures = drawStructures(GFX, map, built.light);
@@ -114,7 +114,7 @@ function land(GFX, map) {
   const cx = map.cols / 2, cz = map.rows / 2;
   const rings = [0, 70, 100, 140, 200, 280, 380];
   // Scrub in the dark, going to the glow of the refineries at the horizon.
-  const colours = ['#2a2c1c', '#2a2c1c', '#262619', '#231f17', '#211a15', '#1e1613', '#1a1210'].map(linearRGB);
+  const colors = ['#2a2c1c', '#2a2c1c', '#262619', '#231f17', '#211a15', '#1e1613', '#1a1210'].map(linearRGB);
   const seg = 144;
   const position = [], normal = [], color = [];
   // The innermost ring is the map's own edge: the land doesn't run under the town, where it would show through anything sunk below it.
@@ -130,7 +130,7 @@ function land(GFX, map) {
       for (const [r, a] of quad) {
         position.push(...pt(r, a));
         normal.push(0, 1, 0);
-        color.push(...colours[r]);
+        color.push(...colors[r]);
       }
     }
   }
